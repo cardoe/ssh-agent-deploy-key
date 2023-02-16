@@ -1,8 +1,8 @@
 {
-  "name": "typescript-action",
+  "name": "action-ssh-agent",
   "version": "0.0.0",
   "private": true,
-  "description": "TypeScript template action",
+  "description": "GitHub Action to setup ssh-agent and GitHub Deploy keys with private keys",
   "main": "lib/main.js",
   "scripts": {
     "build": "tsc",
@@ -15,12 +15,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/typescript-action.git"
+    "url": "git+https://github.com/cardoe/action-ssh-agent.git"
   },
   "keywords": [
     "actions",
-    "node",
-    "setup"
+    "ssh-agent",
+    "github"
   ],
   "author": "",
   "license": "MIT",
