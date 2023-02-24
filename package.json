@@ -1,5 +1,5 @@
 {
-  "name": "action-ssh-agent",
+  "name": "ssh-agent",
   "version": "0.0.0",
   "private": true,
   "description": "GitHub Action to setup ssh-agent and GitHub Deploy keys with private keys",
@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cardoe/action-ssh-agent.git"
+    "url": "git+https://github.com/cardoe/ssh-agent.git"
   },
   "keywords": [
     "actions",
