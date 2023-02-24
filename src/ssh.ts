@@ -1,6 +1,90 @@
 import * as crypto from 'crypto';
 import * as core from '@actions/core';
+import { exec, getExecOutput } from '@actions/exec';
+import * as io from '@actions/io';
 import SSHConfig from 'ssh-config';
+
+export interface ISshCmd {
+  listKeys(): Promise<PubKey[]>;
+  loadPrivateKeys(keys: string[]): Promise<void>;
+  startAgent(): Promise<void>;
+  killAgent(): Promise<void>;
+}
+
+export async function createSshCmd(): Promise<ISshCmd> {
+  return await SshCmd.createSshCmd();
+}
+
+class SshCmd {
+  private sshAddPath = '';
+  private sshAgentPath = '';
+
+  // Private constructor; use createSshCmd()
+  private constructor() {}
+
+  static async createSshCmd(): Promise<SshCmd> {
+    const ret = new SshCmd();
+    ret.sshAddPath = await io.which('ssh-add', true);
+    ret.sshAgentPath = await io.which('ssh-agent', true);
+    return ret;
+  }
+
+  async listKeys(): Promise<PubKey[]> {
+    // list current public key identities
+    core.info(`Running ${this.sshAddPath} -L`);
+    const { stdout } = await getExecOutput(`"${this.sshAddPath}"`, ['-L'], {
+      silent: true,
+    });
+
+    // take the output and split it on each new line
+    const lines = stdout.trim().split(/\r?\n/);
+    // we'll build up a list of key data to return
+    const ret: PubKey[] = [];
+    for (const identity of lines) {
+      // the parts of the identity are split by a space
+      const parts = identity.trim().split(' ');
+      const pubKey = { algo: parts[0], key: parts[1], comment: parts[2] };
+      ret.push(pubKey);
+    }
+
+    return ret;
+  }
+
+  async loadPrivateKeys(keys: string[]): Promise<void> {
+    core.debug(`Running ssh-add for each key`);
+    for (const key of keys) {
+      await exec(`"${this.sshAddPath}"`, ['-'], {
+        input: Buffer.from(`${key}\n`),
+        ignoreReturnCode: true,
+      });
+    }
+  }
+
+  async startAgent(): Promise<void> {
+    // start up ssh-agent
+    core.info(`Running ${this.sshAgentPath}`);
+    const { stdout } = await getExecOutput(`"${this.sshAgentPath}"`, []);
+
+    // grab up the output as lines
+    const lines = stdout.trim().split(/\r?\n/);
+    for (const line of lines) {
+      const parts = line.match(
+        /^(SSH_AUTH_SOCK|SSH_AGENT_PID)=(.*); export \1/,
+      );
+
+      if (!parts) {
+        continue;
+      }
+
+      // export this data for future steps
+      core.exportVariable(parts[1], parts[2]);
+    }
+  }
+
+  async killAgent(): Promise<void> {
+    await getExecOutput(`"${this.sshAgentPath}"`, ['-k']);
+  }
+}
 
 interface PubKey {
   algo: string;
