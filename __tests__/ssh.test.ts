@@ -3,8 +3,47 @@ import {
   genSshConfig,
   getDeployKeys,
   parseDeployKey,
+  parsePrivateKeys,
 } from '../src/ssh';
 import { describe, expect, it } from '@jest/globals';
+import forge from 'node-forge';
+
+function generateRsaKeyPair(comment: string): {
+  public: string;
+  private: string;
+} {
+  const keypair = forge.pki.rsa.generateKeyPair({ bits: 2048 });
+
+  return {
+    public: forge.ssh.publicKeyToOpenSSH(keypair.publicKey, comment),
+    private: forge.ssh
+      .privateKeyToOpenSSH(keypair.privateKey, '')
+      .replace(/RSA PRIVATE/g, 'OPENSSH PRIVATE'),
+  };
+}
+
+describe('Private key parsing', () => {
+  it('parse 1 private key', () => {
+    const keypair = generateRsaKeyPair('fake@user');
+    const parsed = parsePrivateKeys(keypair.private);
+    expect(parsed.length).toEqual(1);
+  });
+
+  it('parse 3 private keys', () => {
+    // generate 3 keys and store only the private part
+    const privateKeys = [
+      generateRsaKeyPair('fake@user'),
+      generateRsaKeyPair('something'),
+      generateRsaKeyPair('another'),
+    ].map(item => {
+      return item.private;
+    });
+    // we get our input as one giant string so do that and test the parse
+    const keyData = privateKeys.join('\n');
+    const parsed = parsePrivateKeys(keyData);
+    expect(parsed.length).toEqual(privateKeys.length);
+  });
+});
 
 describe('GitHub deploy key parsing', () => {
   it.each`

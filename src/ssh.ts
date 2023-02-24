@@ -81,3 +81,10 @@ export function genSshConfig(basePath: string, keys: DeployKey[]) {
   }
   return config;
 }
+
+const KEY_MATCH =
+  /-----BEGIN OPENSSH PRIVATE KEY-----[\r\nA-Za-z0-9+=/]+-----END OPENSSH PRIVATE KEY-----\r?\n?/g;
+
+export function parsePrivateKeys(data: string): string[] {
+  return Array.from(data.matchAll(KEY_MATCH), m => m[0].replace(/\r\n/g, '\n'));
+}
