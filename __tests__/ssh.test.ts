@@ -1,11 +1,13 @@
 import {
   computeKeyMapping,
+  configDeployKeys,
   genSshConfig,
   getDeployKeys,
   parseDeployKey,
   parsePrivateKeys,
 } from '../src/ssh';
-import { describe, expect, it } from '@jest/globals';
+import * as fs from 'fs';
+import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import forge from 'node-forge';
 
 function generateRsaKeyPair(comment: string): {
@@ -147,5 +149,33 @@ describe('GitHub deploy key parsing', () => {
     const deployKey = computeKeyMapping(deployKeyData!);
     const ssh_config = genSshConfig('', [deployKey]);
     expect(ssh_config.find({ Host: deployKey.mapped_host })).toBeTruthy();
+  });
+});
+
+describe('end-to-end GitHub deploy keys handling', () => {
+  beforeAll(() => fs.mkdirSync('./ssh-test-dir/'));
+  afterAll(() =>
+    fs.rmSync('./ssh-test-dir/', { recursive: true, force: true }),
+  );
+
+  it('configure with no keys', async () => {
+    const ret = await configDeployKeys('./ssh-test-dir/', []);
+    expect(ret).toBe(0);
+  });
+
+  it('configure non-matching key', async () => {
+    const keypair = generateRsaKeyPair('fake@user');
+    const parts = keypair.public.trim().split(' ');
+    const key = { algo: parts[0], key: parts[1], comment: parts[2] };
+    const ret = await configDeployKeys('./ssh-test-dir/', [key]);
+    expect(ret).toBe(0);
+  });
+
+  it('configure 1 matching key', async () => {
+    const keypair = generateRsaKeyPair('github.com/org/repo');
+    const parts = keypair.public.trim().split(' ');
+    const key = { algo: parts[0], key: parts[1], comment: parts[2] };
+    const ret = await configDeployKeys('./ssh-test-dir/', [key]);
+    expect(ret).toBe(1);
   });
 });

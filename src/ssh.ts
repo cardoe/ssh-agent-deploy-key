@@ -1,10 +1,71 @@
 import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 import * as core from '@actions/core';
 import { exec, getExecOutput } from '@actions/exec';
 import * as io from '@actions/io';
 import SSHConfig from 'ssh-config';
 
+export async function configDeployKeys(
+  sshPath: string,
+  pubKeys: PubKey[],
+): Promise<number> {
+  const keys = getDeployKeys(pubKeys).map(computeKeyMapping);
+
+  // handle GitHub deploy keys
+  if (keys.length > 0) {
+    core.info('Writing public SSH deploy keys');
+    const keyFileMapping: Record<string, string> = {};
+    for (const key of keys) {
+      const keyFilePath = await writeDeployKey(sshPath, key);
+      keyFileMapping[origRepoUri(key)] = keyFilePath;
+    }
+
+    core.info('Wrote keys. Now the SSH config');
+
+    const sshConfigPath = await writeSshConfig(sshPath, keys);
+    core.info(`Wrote SSH config with deploy key mappings to ${sshConfigPath}`);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const sshHostMapping: Record<string, string> = Object.assign(
+      {},
+      ...keys.map((key: DeployKey) => {
+        return { [origRepoUri(key)]: mappedRepoUri(key) };
+      }),
+    );
+    const mappedHosts = keys.map((key: DeployKey) => {
+      return key.mapped_host;
+    });
+    core.saveState('SSH_MAPPED_HOSTS', mappedHosts);
+    core.saveState('SSH_KEY_FILES', Object.values(keyFileMapping));
+    core.saveState('SSH_CONFIG_PATH', sshConfigPath);
+  }
+  return keys.length;
+}
+
+export async function cleanupDeployKeys(): Promise<void> {
+  const sshMappedHosts = JSON.parse(core.getState('SSH_MAPPED_HOSTS'));
+  const sshConfigPath = core.getState('SSH_CONFIG_PATH');
+  const keyFiles = JSON.parse(core.getState('SSH_KEY_FILES'));
+  for (const file of keyFiles) {
+    core.info(`Removing ${file}`);
+    await io.rmRF(file);
+  }
+
+  if (sshConfigPath) {
+    core.info(`Cleaning up SSH config at ${sshConfigPath}`);
+    const sshConfigStr = (await fs.promises.readFile(sshConfigPath)).toString();
+    const sshConfig = SSHConfig.parse(sshConfigStr);
+    for (const host of sshMappedHosts) {
+      core.info(`Removing ${host} from SSH config`);
+      sshConfig.remove({ Host: host });
+    }
+    await fs.promises.writeFile(sshConfigPath, sshConfig);
+  }
+}
+
 export interface ISshCmd {
+  getDotSshPath(): Promise<string>;
   listKeys(): Promise<PubKey[]>;
   loadPrivateKeys(keys: string[]): Promise<void>;
   startAgent(): Promise<void>;
@@ -18,6 +79,7 @@ export async function createSshCmd(): Promise<ISshCmd> {
 class SshCmd {
   private sshAddPath = '';
   private sshAgentPath = '';
+  private dotSshPath = '';
 
   // Private constructor; use createSshCmd()
   private constructor() {}
@@ -84,6 +146,21 @@ class SshCmd {
   async killAgent(): Promise<void> {
     await getExecOutput(`"${this.sshAgentPath}"`, ['-k']);
   }
+
+  async getDotSshPath(): Promise<string> {
+    // realistically we want this to be a temporary file
+    // that we don't tinker with the system setup
+    // it will also allow this to be exposed into a Docker
+    // build context to function correctly
+    if (this.dotSshPath === '') {
+      const dotSshPath = path.join(os.homedir(), '.ssh');
+      await io.mkdirP(dotSshPath);
+      this.dotSshPath = dotSshPath;
+      return dotSshPath;
+    } else {
+      return this.dotSshPath;
+    }
+  }
 }
 
 interface PubKey {
@@ -101,6 +178,14 @@ interface DeployKeyMatch extends PubKey {
 interface DeployKey extends DeployKeyMatch {
   filename: string;
   mapped_host: string;
+}
+
+function origRepoUri(key: DeployKey): string {
+  return `git@${key.host}:${key.repo_path}`;
+}
+
+function mappedRepoUri(key: DeployKey): string {
+  return `git@${key.mapped_host}:${key.repo_path}`;
 }
 
 const OWNER_REPO_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+\/[_.a-z0-9-]+)?$/i;
@@ -164,6 +249,49 @@ export function genSshConfig(basePath: string, keys: DeployKey[]) {
     });
   }
   return config;
+}
+
+async function writeDeployKey(
+  basePath: string,
+  key: DeployKey,
+): Promise<string> {
+  const keypath = path.join(basePath, key.filename);
+  await fs.promises.writeFile(keypath, `${key.algo} ${key.key} ${key.comment}`);
+  return keypath;
+}
+
+async function existing(filePath: string): Promise<fs.Stats | undefined> {
+  try {
+    return await fs.promises.stat(filePath);
+  } catch (_) {
+    return undefined;
+  }
+}
+
+async function writeSshConfig(
+  basePath: string,
+  keys: DeployKey[],
+): Promise<string> {
+  const localSshConfig = genSshConfig(basePath, keys);
+  const sshConfigPath = `${basePath}/config`;
+  const existingConfig = await existing(sshConfigPath);
+  if (existingConfig !== undefined) {
+    core.info(`Found existing SSH config at ${sshConfigPath}`);
+    const userSshConfigStr = (
+      await fs.promises.readFile(sshConfigPath)
+    ).toString();
+    const userSshConfig = SSHConfig.parse(userSshConfigStr);
+    localSshConfig.push(...userSshConfig);
+  }
+
+  await fs.promises.writeFile(
+    sshConfigPath,
+    SSHConfig.stringify(localSshConfig),
+    {
+      mode: existingConfig !== undefined ? existingConfig.mode : 0o600,
+    },
+  );
+  return sshConfigPath;
 }
 
 const KEY_MATCH =
