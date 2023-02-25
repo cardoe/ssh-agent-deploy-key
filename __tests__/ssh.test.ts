@@ -1,4 +1,9 @@
-import { computeKeyMapping, getDeployKeys, parseDeployKey } from '../src/ssh';
+import {
+  computeKeyMapping,
+  genSshConfig,
+  getDeployKeys,
+  parseDeployKey,
+} from '../src/ssh';
 import { describe, expect, it } from '@jest/globals';
 
 describe('GitHub deploy key parsing', () => {
@@ -94,4 +99,14 @@ describe('GitHub deploy key parsing', () => {
       expect(mapping.filename.startsWith(prefix)).toBe(true);
     },
   );
+
+  it('check ssh_config generation', () => {
+    const key = { algo: '', key: '', comment: 'github.com:username/repo' };
+    const deployKeyData = parseDeployKey(key);
+    expect(deployKeyData).not.toBeNull();
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const deployKey = computeKeyMapping(deployKeyData!);
+    const ssh_config = genSshConfig('', [deployKey]);
+    expect(ssh_config.find({ Host: deployKey.mapped_host })).toBeTruthy();
+  });
 });

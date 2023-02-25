@@ -1,5 +1,6 @@
 import * as crypto from 'crypto';
 import * as core from '@actions/core';
+import SSHConfig from 'ssh-config';
 
 interface PubKey {
   algo: string;
@@ -65,4 +66,18 @@ export function computeKeyMapping(key: DeployKeyMatch): DeployKey {
     filename: `${type}-${hash}`,
     mapped_host: `${type}-${hash}.${key.host}`,
   };
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export function genSshConfig(basePath: string, keys: DeployKey[]) {
+  const config = new SSHConfig();
+  for (const key of keys) {
+    config.append({
+      Host: key.mapped_host,
+      HostName: key.host,
+      IdentityFile: `${basePath}/${key.filename}`,
+      IdentitiesOnly: 'yes',
+    });
+  }
+  return config;
 }
