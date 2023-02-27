@@ -77,7 +77,7 @@ describe('GitHub deploy key parsing', () => {
   `(
     "should '$keyComment' parse as '$host:$repo_path', org: $org",
     async ({ keyComment, host, repo_path, org }) => {
-      const key = { algo: '', key: '', comment: keyComment };
+      const key = { algo: '', key: '', comment: keyComment as string };
       expect(parseDeployKey(key)).toEqual({ ...key, host, repo_path, org });
     },
   );
