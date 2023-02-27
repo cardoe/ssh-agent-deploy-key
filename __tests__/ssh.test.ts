@@ -1,3 +1,4 @@
+import * as git from '../src/git';
 import {
   computeKeyMapping,
   configDeployKeys,
@@ -7,8 +8,21 @@ import {
   parsePrivateKeys,
 } from '../src/ssh';
 import * as fs from 'fs';
-import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import forge from 'node-forge';
+
+const mockGitCmd: git.IGitCmd = {
+  setConfig: jest.fn<git.setConfig>(),
+  rmConfig: jest.fn<git.rmConfig>(),
+};
 
 function generateRsaKeyPair(comment: string): {
   public: string;
@@ -153,29 +167,38 @@ describe('GitHub deploy key parsing', () => {
 });
 
 describe('end-to-end GitHub deploy keys handling', () => {
-  beforeAll(() => fs.mkdirSync('./ssh-test-dir/'));
+  beforeAll(() => {
+    fs.mkdirSync('./ssh-test-dir/');
+  });
   afterAll(() =>
     fs.rmSync('./ssh-test-dir/', { recursive: true, force: true }),
   );
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('configure with no keys', async () => {
-    const ret = await configDeployKeys('./ssh-test-dir/', []);
+    const ret = await configDeployKeys('./ssh-test-dir/', [], mockGitCmd);
     expect(ret).toBe(0);
+    expect(mockGitCmd.setConfig).not.toBeCalled();
   });
 
   it('configure non-matching key', async () => {
     const keypair = generateRsaKeyPair('fake@user');
     const parts = keypair.public.trim().split(' ');
     const key = { algo: parts[0], key: parts[1], comment: parts[2] };
-    const ret = await configDeployKeys('./ssh-test-dir/', [key]);
+    const ret = await configDeployKeys('./ssh-test-dir/', [key], mockGitCmd);
     expect(ret).toBe(0);
+    expect(mockGitCmd.setConfig).not.toBeCalled();
   });
 
   it('configure 1 matching key', async () => {
     const keypair = generateRsaKeyPair('github.com/org/repo');
     const parts = keypair.public.trim().split(' ');
     const key = { algo: parts[0], key: parts[1], comment: parts[2] };
-    const ret = await configDeployKeys('./ssh-test-dir/', [key]);
+    const ret = await configDeployKeys('./ssh-test-dir/', [key], mockGitCmd);
     expect(ret).toBe(1);
+    expect(mockGitCmd.setConfig).toBeCalled();
   });
 });

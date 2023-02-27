@@ -6,10 +6,17 @@ import * as core from '@actions/core';
 import { exec, getExecOutput } from '@actions/exec';
 import * as io from '@actions/io';
 import SSHConfig from 'ssh-config';
+import { IGitCmd } from './git';
+
+interface MappedHostSaveState {
+  mapped_host: string;
+  mapped_uri: string;
+}
 
 export async function configDeployKeys(
   sshPath: string,
   pubKeys: PubKey[],
+  gitCmd: IGitCmd,
 ): Promise<number> {
   const keys = getDeployKeys(pubKeys).map(computeKeyMapping);
 
@@ -26,15 +33,27 @@ export async function configDeployKeys(
 
     const sshConfigPath = await writeSshConfig(sshPath, keys);
     core.info(`Wrote SSH config with deploy key mappings to ${sshConfigPath}`);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const sshHostMapping: Record<string, string> = Object.assign(
+    const sshHostMapping: Record<string, string[]> = Object.assign(
       {},
       ...keys.map((key: DeployKey) => {
-        return { [origRepoUri(key)]: mappedRepoUri(key) };
+        return {
+          [mappedRepoUri(key)]: [
+            `https://${key.host}/${key.repo_path}`,
+            origRepoUri(key),
+          ],
+        };
       }),
     );
-    const mappedHosts = keys.map((key: DeployKey) => {
-      return key.mapped_host;
+
+    for (const mappedHost in sshHostMapping) {
+      let replace = true;
+      for (const target of sshHostMapping[mappedHost]) {
+        gitCmd.setConfig(`url."${mappedHost}".insteadOf`, target, replace);
+        replace = false;
+      }
+    }
+    const mappedHosts: MappedHostSaveState[] = keys.map((key: DeployKey) => {
+      return { mapped_host: key.mapped_host, mapped_uri: mappedRepoUri(key) };
     });
     core.saveState('SSH_MAPPED_HOSTS', mappedHosts);
     core.saveState('SSH_KEY_FILES', Object.values(keyFileMapping));
@@ -43,10 +62,12 @@ export async function configDeployKeys(
   return keys.length;
 }
 
-export async function cleanupDeployKeys(): Promise<void> {
-  const sshMappedHosts = JSON.parse(core.getState('SSH_MAPPED_HOSTS'));
-  const sshConfigPath = core.getState('SSH_CONFIG_PATH');
-  const keyFiles = JSON.parse(core.getState('SSH_KEY_FILES'));
+export async function cleanupDeployKeys(gitCmd: IGitCmd): Promise<void> {
+  const sshMappedHosts: MappedHostSaveState[] = JSON.parse(
+    core.getState('SSH_MAPPED_HOSTS'),
+  );
+  const sshConfigPath: string = core.getState('SSH_CONFIG_PATH');
+  const keyFiles: string[] = JSON.parse(core.getState('SSH_KEY_FILES'));
   for (const file of keyFiles) {
     core.info(`Removing ${file}`);
     await io.rmRF(file);
@@ -57,10 +78,14 @@ export async function cleanupDeployKeys(): Promise<void> {
     const sshConfigStr = (await fs.promises.readFile(sshConfigPath)).toString();
     const sshConfig = SSHConfig.parse(sshConfigStr);
     for (const host of sshMappedHosts) {
-      core.info(`Removing ${host} from SSH config`);
-      sshConfig.remove({ Host: host });
+      core.info(`Removing ${host.mapped_host} from SSH config`);
+      sshConfig.remove({ Host: host.mapped_host });
     }
     await fs.promises.writeFile(sshConfigPath, sshConfig);
+  }
+
+  for (const mappedHost of sshMappedHosts) {
+    gitCmd.rmConfig(`url."${mappedHost.mapped_uri}".insteadOf`);
   }
 }
 
