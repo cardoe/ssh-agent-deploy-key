@@ -1,11 +1,11 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'ssh-agent'
+description: 'GitHub Action to setup ssh-agent and GitHub Deploy keys with private keys'
 inputs:
-  milliseconds: # change this
+  ssh-private-key:
+    description: Private SSH key(s) to register in the SSH agent
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
 runs:
   using: 'node16'
   main: 'dist/index.js'
+  post: 'dist/index.js'
+  post-if: 'always()'

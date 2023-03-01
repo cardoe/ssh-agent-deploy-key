@@ -22,4 +22,12 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./
         with:
-          milliseconds: 1000
+          ssh-private-key: |
+            ${{ secrets.ED25519_KEY }}
+            bad key
+            ${{ secrets.ED25519_DEPLOY }}
+            ${{ secrets.RSA_KEY }}
+            trash-string
+            ${{ secrets.RSA_DEPLOY }}
+            ${{ secrets.ECDSA_KEY }}
+            ${{ secrets.ECDSA_DEPLOY }}
