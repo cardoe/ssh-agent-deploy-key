@@ -1,5 +1,5 @@
 {
-  "name": "ssh-agent",
+  "name": "ssh-agent-deploy-key",
   "version": "0.0.0",
   "private": true,
   "description": "GitHub Action to setup ssh-agent and GitHub Deploy keys with private keys",
@@ -15,12 +15,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cardoe/ssh-agent.git"
+    "url": "git+https://github.com/cardoe/ssh-agent-deploy-key.git"
   },
   "keywords": [
     "actions",
     "ssh-agent",
-    "github"
+    "github",
+    "deploy",
+    "keys"
   ],
   "author": "",
   "license": "MIT",
