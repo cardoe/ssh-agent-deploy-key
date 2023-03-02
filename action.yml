@@ -1,4 +1,4 @@
-name: 'ssh-agent'
+name: 'ssh-agent-deploy-key'
 description: 'GitHub Action to setup ssh-agent and GitHub Deploy keys with private keys'
 inputs:
   ssh-private-key:
@@ -9,3 +9,6 @@ runs:
   main: 'dist/index.js'
   post: 'dist/index.js'
   post-if: 'always()'
+branding:
+  icon: chevrons-down
+  color: blue

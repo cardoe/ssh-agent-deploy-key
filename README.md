@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/cardoe/ssh-agent"><img alt="ssh-agent status" src="https://github.com/cardoe/ssh-agent/workflows/build-test/badge.svg"></a>
+  <a href="https://github.com/cardoe/ssh-agent-deploy-key"><img alt="ssh-agent-deploy-key status" src="https://github.com/cardoe/ssh-agent-deploy-key/workflows/build-test/badge.svg"></a>
 </p>
 
 # ssh-agent with GitHub deploy key support
@@ -15,7 +15,7 @@ a passphrase.
 
 <!-- start usage -->
 ```yaml
-- uses: cardoe/ssh-agent@v1
+- uses: cardoe/ssh-agent-deploy-key@v1
   with:
     # SSH private keys to load into the ssh-agent
     ssh-private-key: |
