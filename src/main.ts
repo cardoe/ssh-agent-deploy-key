@@ -32,8 +32,7 @@ async function main(): Promise<void> {
     core.info(`Configured ${deployed} key(s) to use as GitHub deploy keys`);
     core.endGroup();
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    core.setFailed(`${(error as any)?.message ?? error}`);
+    core.setFailed(`${(error as Error)?.message ?? error}`);
   }
 }
 
@@ -52,8 +51,7 @@ async function cleanup(): Promise<void> {
     await ssh.cleanupDeployKeys(gitCmd);
     core.endGroup();
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    core.setFailed(`${(error as any)?.message ?? error}`);
+    core.setFailed(`${(error as Error)?.message ?? error}`);
   }
 }
 

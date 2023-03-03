@@ -155,7 +155,6 @@ function main() {
             core.endGroup();
         }
         catch (error) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             core.setFailed(`${(_a = error === null || error === void 0 ? void 0 : error.message) !== null && _a !== void 0 ? _a : error}`);
         }
     });
@@ -176,7 +175,6 @@ function cleanup() {
             core.endGroup();
         }
         catch (error) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             core.setFailed(`${(_a = error === null || error === void 0 ? void 0 : error.message) !== null && _a !== void 0 ? _a : error}`);
         }
     });
