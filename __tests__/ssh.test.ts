@@ -1,5 +1,6 @@
 import * as git from '../src/git';
 import {
+  cleanupDeployKeys,
   computeKeyMapping,
   configDeployKeys,
   genSshConfig,
@@ -182,6 +183,8 @@ describe('end-to-end GitHub deploy keys handling', () => {
     const ret = await configDeployKeys('./ssh-test-dir/', [], mockGitCmd);
     expect(ret).toBe(0);
     expect(mockGitCmd.setConfig).not.toBeCalled();
+    await cleanupDeployKeys(mockGitCmd);
+    expect(mockGitCmd.rmConfig).not.toBeCalled();
   });
 
   it('configure non-matching key', async () => {

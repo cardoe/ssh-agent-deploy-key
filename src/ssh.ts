@@ -63,11 +63,25 @@ export async function configDeployKeys(
 }
 
 export async function cleanupDeployKeys(gitCmd: IGitCmd): Promise<void> {
-  const sshMappedHosts: MappedHostSaveState[] = JSON.parse(
-    core.getState('SSH_MAPPED_HOSTS'),
-  );
+  // attempt to parse the data from the saved state
+  // default to an empty array
+  let sshMappedHosts: MappedHostSaveState[] = [];
+  try {
+    sshMappedHosts = JSON.parse(
+      core.getState('SSH_MAPPED_HOSTS'),
+    ) as MappedHostSaveState[];
+  } catch (e) {
+    // nothing to clean up
+  }
+  // $HOME/.ssh/config by default
   const sshConfigPath: string = core.getState('SSH_CONFIG_PATH');
-  const keyFiles: string[] = JSON.parse(core.getState('SSH_KEY_FILES'));
+  // list of keyfiles we need to clean up, empty by default
+  let keyFiles: string[] = [];
+  try {
+    keyFiles = JSON.parse(core.getState('SSH_KEY_FILES')) as string[];
+  } catch (e) {
+    // nothing to clean up
+  }
   for (const file of keyFiles) {
     core.info(`Removing ${file}`);
     await io.rmRF(file);

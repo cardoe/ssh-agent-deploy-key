@@ -289,9 +289,25 @@ function configDeployKeys(sshPath, pubKeys, gitCmd) {
 exports.configDeployKeys = configDeployKeys;
 function cleanupDeployKeys(gitCmd) {
     return __awaiter(this, void 0, void 0, function* () {
-        const sshMappedHosts = JSON.parse(core.getState('SSH_MAPPED_HOSTS'));
+        // attempt to parse the data from the saved state
+        // default to an empty array
+        let sshMappedHosts = [];
+        try {
+            sshMappedHosts = JSON.parse(core.getState('SSH_MAPPED_HOSTS'));
+        }
+        catch (e) {
+            // nothing to clean up
+        }
+        // $HOME/.ssh/config by default
         const sshConfigPath = core.getState('SSH_CONFIG_PATH');
-        const keyFiles = JSON.parse(core.getState('SSH_KEY_FILES'));
+        // list of keyfiles we need to clean up, empty by default
+        let keyFiles = [];
+        try {
+            keyFiles = JSON.parse(core.getState('SSH_KEY_FILES'));
+        }
+        catch (e) {
+            // nothing to clean up
+        }
         for (const file of keyFiles) {
             core.info(`Removing ${file}`);
             yield io.rmRF(file);
