@@ -155,7 +155,6 @@ function main() {
             core.endGroup();
         }
         catch (error) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             core.setFailed(`${(_a = error === null || error === void 0 ? void 0 : error.message) !== null && _a !== void 0 ? _a : error}`);
         }
     });
@@ -176,7 +175,6 @@ function cleanup() {
             core.endGroup();
         }
         catch (error) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             core.setFailed(`${(_a = error === null || error === void 0 ? void 0 : error.message) !== null && _a !== void 0 ? _a : error}`);
         }
     });
@@ -289,9 +287,25 @@ function configDeployKeys(sshPath, pubKeys, gitCmd) {
 exports.configDeployKeys = configDeployKeys;
 function cleanupDeployKeys(gitCmd) {
     return __awaiter(this, void 0, void 0, function* () {
-        const sshMappedHosts = JSON.parse(core.getState('SSH_MAPPED_HOSTS'));
+        // attempt to parse the data from the saved state
+        // default to an empty array
+        let sshMappedHosts = [];
+        try {
+            sshMappedHosts = JSON.parse(core.getState('SSH_MAPPED_HOSTS'));
+        }
+        catch (e) {
+            // nothing to clean up
+        }
+        // $HOME/.ssh/config by default
         const sshConfigPath = core.getState('SSH_CONFIG_PATH');
-        const keyFiles = JSON.parse(core.getState('SSH_KEY_FILES'));
+        // list of keyfiles we need to clean up, empty by default
+        let keyFiles = [];
+        try {
+            keyFiles = JSON.parse(core.getState('SSH_KEY_FILES'));
+        }
+        catch (e) {
+            // nothing to clean up
+        }
         for (const file of keyFiles) {
             core.info(`Removing ${file}`);
             yield io.rmRF(file);
@@ -444,7 +458,7 @@ function computeKeyMapping(key) {
     // repo/org info
     const hash = crypto.createHash('sha256').update(key.comment).digest('hex');
     const type = key.org ? 'org' : 'repo';
-    return Object.assign(Object.assign({}, key), { filename: `${type}-${hash}`, mapped_host: `${type}-${hash}.${key.host}` });
+    return Object.assign(Object.assign({}, key), { filename: `${type}-${hash}.pub`, mapped_host: `${type}-${hash}.${key.host}` });
 }
 exports.computeKeyMapping = computeKeyMapping;
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
