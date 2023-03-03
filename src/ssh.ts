@@ -133,9 +133,18 @@ class SshCmd {
   async listKeys(): Promise<PubKey[]> {
     // list current public key identities
     core.info(`Running ${this.sshAddPath} -L`);
-    const { stdout } = await getExecOutput(`"${this.sshAddPath}"`, ['-L'], {
-      silent: true,
-    });
+    const { exitCode, stdout } = await getExecOutput(
+      `"${this.sshAddPath}"`,
+      ['-L'],
+      {
+        ignoreReturnCode: true,
+        silent: true,
+      },
+    );
+
+    if (exitCode > 1 || exitCode < 0) {
+      throw new Error(`Failed to run ${this.sshAddPath} -L`);
+    }
 
     // take the output and split it on each new line
     const lines = stdout.trim().split(/\r?\n/);
