@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [closed]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -31,20 +35,9 @@ jobs:
           tag: ${{ steps.bump-semver.outputs.new_version }}
           message: '${{ steps.bump-semver.outputs.new_version }}: PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title }}'
 
-      - name: Update down line tags for GitHub Actions
-        if: ${{ steps.release-label.outputs.level != null }}
-        shell: bash
-        env:
-          NEWVER: ${{ steps.release-label.outputs.new_version }}
-        run: |
-          git config user.name "${GITHUB_ACTOR}"
-          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-
-          tag=$(echo ${NEWVER} | awk -F '/' '{ print $NF }')
-          minor="${tag%.*}"
-          git tag -f "${minor}"
-          git push -f origin "${minor}"
-          major="${minor%.*}"
-          git tag -f "${major}"
-          git push -f origin "${major}"
+      - uses: haya14busa/action-update-semver@v1
+        if: ${{ steps.release-label.outputs.new_version }}
+        with:
+          github_token: ${{ secrets.github_token }}
+          tag: ${{ steps.release-label.outputs.new_version }}
 
