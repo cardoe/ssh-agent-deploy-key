@@ -153,6 +153,7 @@ describe('GitHub deploy key parsing', () => {
         new RegExp(`${prefix}[a-z0-9]+.${host}`),
       );
       expect(mapping.filename.startsWith(prefix)).toBe(true);
+      expect(mapping.filename.endsWith('.pub')).toBe(true);
     },
   );
 

@@ -271,7 +271,7 @@ export function computeKeyMapping(key: DeployKeyMatch): DeployKey {
   const type = key.org ? 'org' : 'repo';
   return {
     ...key,
-    filename: `${type}-${hash}`,
+    filename: `${type}-${hash}.pub`,
     mapped_host: `${type}-${hash}.${key.host}`,
   };
 }

@@ -460,7 +460,7 @@ function computeKeyMapping(key) {
     // repo/org info
     const hash = crypto.createHash('sha256').update(key.comment).digest('hex');
     const type = key.org ? 'org' : 'repo';
-    return Object.assign(Object.assign({}, key), { filename: `${type}-${hash}`, mapped_host: `${type}-${hash}.${key.host}` });
+    return Object.assign(Object.assign({}, key), { filename: `${type}-${hash}.pub`, mapped_host: `${type}-${hash}.${key.host}` });
 }
 exports.computeKeyMapping = computeKeyMapping;
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
