@@ -230,3 +230,67 @@ const KEY_MATCH =
 export function parsePrivateKeys(data: string): string[] {
   return Array.from(data.matchAll(KEY_MATCH), m => m[0].replace(/\r\n/g, '\n'));
 }
+
+export async function loadKnownHosts(
+  sshCmd: ISshCmd,
+  keys: string[],
+): Promise<string[]> {
+  const sshBasePath = await sshCmd.getDotSshPath();
+
+  // get all unique host names
+  const hostnames = new Set(
+    keys
+      .map(key => {
+        // parse out the hostname from the known_host entry to see if we need to add it
+        try {
+          return key.split(' ')[0];
+        } catch (e) {
+          return null;
+        }
+      })
+      .filter(item => item !== null) as string[],
+  );
+
+  // check for hosts that already exist to skip them
+  for (const hostname in hostnames) {
+    if (await sshCmd.hasHostKey(hostname)) {
+      hostnames.delete(hostname);
+    }
+  }
+
+  for (const key of keys) {
+    let hostname;
+    try {
+      hostname = key.split(' ')[0];
+    } catch (e) {
+      hostname = null;
+    }
+
+    if (hostname === null || !hostnames.has(hostname)) {
+      core.info(
+        `Skipping known_host entry for ${hostname} as it already exists`,
+      );
+      continue;
+    }
+    core.info(`Writing known_host entry for ${hostname}`);
+    await fs.promises.appendFile(`${sshBasePath}/known_hosts`, `${key}\n`, {
+      mode: 0o600,
+    });
+  }
+  core.saveState('SSH_KNOWN_HOSTS', [...hostnames]);
+  return [...hostnames];
+}
+
+export async function cleanupKnownHosts(sshCmd: ISshCmd): Promise<void> {
+  let sshKnownHosts: string[] = [];
+  try {
+    sshKnownHosts = JSON.parse(core.getState('SSH_KNOWN_HOSTS')) as string[];
+  } catch (e) {
+    // nothing to clean up
+  }
+
+  for (const hostname of sshKnownHosts) {
+    core.info(`Removing known_host entry for ${hostname}`);
+    await sshCmd.rmHostKey(hostname);
+  }
+}

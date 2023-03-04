@@ -4,6 +4,11 @@ inputs:
   ssh-private-key:
     description: Private SSH key(s) to register in the SSH agent
     required: true
+  ssh-known-hosts:
+    description: >
+      Known hosts in addition to the user and global host key database. The
+      public SSH keys for a host may be obtained using the utility
+      `ssh-keyscan`. For example, `ssh-keyscan github.com`.
 runs:
   using: 'node16'
   main: 'dist/index.js'

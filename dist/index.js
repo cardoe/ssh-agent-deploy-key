@@ -240,6 +240,7 @@ function main() {
                 trimWhitespace: true,
             });
             const privateKeys = ssh.parsePrivateKeys(privateKeyData);
+            const sshKnownHosts = core.getMultilineInput('ssh-known-hosts');
             core.startGroup('Gathering utilities');
             const sshCmd = yield cmds.createSshCmd();
             const gitCmd = yield cmds.createGitCmd();
@@ -249,6 +250,9 @@ function main() {
             core.endGroup();
             core.startGroup(`Loading ${privateKeys.length} private key(s)`);
             yield sshCmd.loadPrivateKeys(privateKeys);
+            core.endGroup();
+            core.startGroup('Configuring SSH known_hosts');
+            yield ssh.loadKnownHosts(sshCmd, sshKnownHosts);
             core.endGroup();
             core.startGroup('Configuring GitHub deploy keys');
             const pubKeys = yield ssh.getPublicKeys(sshCmd);
@@ -274,6 +278,9 @@ function cleanup() {
             core.endGroup();
             core.startGroup('Killing ssh-agent');
             yield sshCmd.killAgent();
+            core.endGroup();
+            core.startGroup('Cleaning up SSH known_hosts');
+            yield ssh.cleanupKnownHosts(sshCmd);
             core.endGroup();
             core.startGroup('Cleaning up GitHub deploy keys');
             yield ssh.cleanupDeployKeys(gitCmd);
@@ -341,7 +348,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.parsePrivateKeys = exports.genSshConfig = exports.computeKeyMapping = exports.getDeployKeys = exports.parseDeployKey = exports.getPublicKeys = exports.cleanupDeployKeys = exports.configDeployKeys = void 0;
+exports.cleanupKnownHosts = exports.loadKnownHosts = exports.parsePrivateKeys = exports.genSshConfig = exports.computeKeyMapping = exports.getDeployKeys = exports.parseDeployKey = exports.getPublicKeys = exports.cleanupDeployKeys = exports.configDeployKeys = void 0;
 const crypto = __importStar(__nccwpck_require__(6113));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -525,6 +532,65 @@ function parsePrivateKeys(data) {
     return Array.from(data.matchAll(KEY_MATCH), m => m[0].replace(/\r\n/g, '\n'));
 }
 exports.parsePrivateKeys = parsePrivateKeys;
+function loadKnownHosts(sshCmd, keys) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const sshBasePath = yield sshCmd.getDotSshPath();
+        // get all unique host names
+        const hostnames = new Set(keys
+            .map(key => {
+            // parse out the hostname from the known_host entry to see if we need to add it
+            try {
+                return key.split(' ')[0];
+            }
+            catch (e) {
+                return null;
+            }
+        })
+            .filter(item => item !== null));
+        // check for hosts that already exist to skip them
+        for (const hostname in hostnames) {
+            if (yield sshCmd.hasHostKey(hostname)) {
+                hostnames.delete(hostname);
+            }
+        }
+        for (const key of keys) {
+            let hostname;
+            try {
+                hostname = key.split(' ')[0];
+            }
+            catch (e) {
+                hostname = null;
+            }
+            if (hostname === null || !hostnames.has(hostname)) {
+                core.info(`Skipping known_host entry for ${hostname} as it already exists`);
+                continue;
+            }
+            core.info(`Writing known_host entry for ${hostname}`);
+            yield fs.promises.appendFile(`${sshBasePath}/known_hosts`, `${key}\n`, {
+                mode: 0o600,
+            });
+        }
+        core.saveState('SSH_KNOWN_HOSTS', [...hostnames]);
+        return [...hostnames];
+    });
+}
+exports.loadKnownHosts = loadKnownHosts;
+function cleanupKnownHosts(sshCmd) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let sshKnownHosts = [];
+        try {
+            sshKnownHosts = JSON.parse(core.getState('SSH_KNOWN_HOSTS'));
+        }
+        catch (e) {
+            // nothing to clean up
+        }
+        for (const hostname of sshKnownHosts) {
+            core.info(`Removing known_host entry for ${hostname}`);
+            yield sshCmd.rmHostKey(hostname);
+        }
+    });
+}
+exports.cleanupKnownHosts = cleanupKnownHosts;
 
 
 /***/ }),

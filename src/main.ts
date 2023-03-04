@@ -10,6 +10,8 @@ async function main(): Promise<void> {
     });
     const privateKeys = ssh.parsePrivateKeys(privateKeyData);
 
+    const sshKnownHosts = core.getMultilineInput('ssh-known-hosts');
+
     core.startGroup('Gathering utilities');
     const sshCmd = await cmds.createSshCmd();
     const gitCmd = await cmds.createGitCmd();
@@ -21,6 +23,10 @@ async function main(): Promise<void> {
 
     core.startGroup(`Loading ${privateKeys.length} private key(s)`);
     await sshCmd.loadPrivateKeys(privateKeys);
+    core.endGroup();
+
+    core.startGroup('Configuring SSH known_hosts');
+    await ssh.loadKnownHosts(sshCmd, sshKnownHosts);
     core.endGroup();
 
     core.startGroup('Configuring GitHub deploy keys');
@@ -45,6 +51,10 @@ async function cleanup(): Promise<void> {
 
     core.startGroup('Killing ssh-agent');
     await sshCmd.killAgent();
+    core.endGroup();
+
+    core.startGroup('Cleaning up SSH known_hosts');
+    await ssh.cleanupKnownHosts(sshCmd);
     core.endGroup();
 
     core.startGroup('Cleaning up GitHub deploy keys');
