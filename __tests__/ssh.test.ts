@@ -32,6 +32,8 @@ const mockSshCmd: cmds.ISshCmd = {
   loadPrivateKeys: jest.fn<cmds.loadPrivateKeys>(),
   startAgent: jest.fn<cmds.startAgent>(),
   killAgent: jest.fn<cmds.killAgent>(),
+  hasHostKey: jest.fn<cmds.hasHostKey>(),
+  rmHostKey: jest.fn<cmds.rmHostKey>(),
 };
 
 function generateRsaKeyPair(comment: string): {

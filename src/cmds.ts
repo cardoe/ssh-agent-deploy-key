@@ -60,6 +60,8 @@ export type listKeys = () => Promise<string[]>;
 export type loadPrivateKeys = (keys: string[]) => Promise<void>;
 export type startAgent = () => Promise<void>;
 export type killAgent = () => Promise<void>;
+export type hasHostKey = (host: string) => Promise<boolean>;
+export type rmHostKey = (host: string) => Promise<void>;
 
 export interface ISshCmd {
   getDotSshPath: getDotSshPath;
@@ -67,6 +69,8 @@ export interface ISshCmd {
   loadPrivateKeys: loadPrivateKeys;
   startAgent: startAgent;
   killAgent: killAgent;
+  hasHostKey: hasHostKey;
+  rmHostKey: rmHostKey;
 }
 
 export async function createSshCmd(): Promise<ISshCmd> {
@@ -76,6 +80,7 @@ export async function createSshCmd(): Promise<ISshCmd> {
 class SshCmd {
   private sshAddPath = '';
   private sshAgentPath = '';
+  private sshKeyGenPath = '';
   private dotSshPath = '';
 
   // Private constructor; use createSshCmd()
@@ -85,6 +90,7 @@ class SshCmd {
     const ret = new SshCmd();
     ret.sshAddPath = await io.which('ssh-add', true);
     ret.sshAgentPath = await io.which('ssh-agent', true);
+    ret.sshKeyGenPath = await io.which('ssh-keygen', true);
     return ret;
   }
 
@@ -141,6 +147,17 @@ class SshCmd {
 
   async killAgent(): Promise<void> {
     await exec.getExecOutput(`"${this.sshAgentPath}"`, ['-k']);
+  }
+
+  async hasHostKey(host: string): Promise<boolean> {
+    const exitCode = await exec.exec(`"${this.sshKeyGenPath}"`, ['-F', host], {
+      ignoreReturnCode: true,
+    });
+    return exitCode === 0 ? true : false;
+  }
+
+  async rmHostKey(host: string): Promise<void> {
+    await exec.exec(`"${this.sshKeyGenPath}"`, ['-R', host]);
   }
 
   async getDotSshPath(): Promise<string> {

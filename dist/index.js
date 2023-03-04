@@ -95,6 +95,7 @@ class SshCmd {
     constructor() {
         this.sshAddPath = '';
         this.sshAgentPath = '';
+        this.sshKeyGenPath = '';
         this.dotSshPath = '';
     }
     static createSshCmd() {
@@ -102,6 +103,7 @@ class SshCmd {
             const ret = new SshCmd();
             ret.sshAddPath = yield io.which('ssh-add', true);
             ret.sshAgentPath = yield io.which('ssh-agent', true);
+            ret.sshKeyGenPath = yield io.which('ssh-keygen', true);
             return ret;
         });
     }
@@ -151,6 +153,19 @@ class SshCmd {
     killAgent() {
         return __awaiter(this, void 0, void 0, function* () {
             yield exec.getExecOutput(`"${this.sshAgentPath}"`, ['-k']);
+        });
+    }
+    hasHostKey(host) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const exitCode = yield exec.exec(`"${this.sshKeyGenPath}"`, ['-F', host], {
+                ignoreReturnCode: true,
+            });
+            return exitCode === 0 ? true : false;
+        });
+    }
+    rmHostKey(host) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield exec.exec(`"${this.sshKeyGenPath}"`, ['-R', host]);
         });
     }
     getDotSshPath() {
