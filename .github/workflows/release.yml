@@ -10,6 +10,11 @@ on:
     types:
       - labeled
 
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
 jobs:
   release:
     if: github.event.action != 'labeled'
