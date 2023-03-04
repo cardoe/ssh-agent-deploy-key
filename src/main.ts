@@ -11,7 +11,7 @@ async function main(): Promise<void> {
     const privateKeys = ssh.parsePrivateKeys(privateKeyData);
 
     core.startGroup('Gathering utilities');
-    const sshCmd = await ssh.createSshCmd();
+    const sshCmd = await cmds.createSshCmd();
     const gitCmd = await cmds.createGitCmd();
     core.endGroup();
 
@@ -24,7 +24,7 @@ async function main(): Promise<void> {
     core.endGroup();
 
     core.startGroup('Configuring GitHub deploy keys');
-    const pubKeys = await sshCmd.listKeys();
+    const pubKeys = await ssh.getPublicKeys(sshCmd);
     core.info(`Got ${pubKeys.length} key(s) to check`);
     const sshBasePath = await sshCmd.getDotSshPath();
     core.info(`Using ${sshBasePath} for SSH key storage and config`);
@@ -39,7 +39,7 @@ async function main(): Promise<void> {
 async function cleanup(): Promise<void> {
   try {
     core.startGroup('Gathering utilities');
-    const sshCmd = await ssh.createSshCmd();
+    const sshCmd = await cmds.createSshCmd();
     const gitCmd = await cmds.createGitCmd();
     core.endGroup();
 

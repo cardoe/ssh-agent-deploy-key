@@ -39,9 +39,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createGitCmd = void 0;
+exports.createSshCmd = exports.createGitCmd = void 0;
+const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const io = __importStar(__nccwpck_require__(7436));
+const os = __importStar(__nccwpck_require__(2037));
+const path = __importStar(__nccwpck_require__(1017));
 function createGitCmd() {
     return __awaiter(this, void 0, void 0, function* () {
         return yield GitCmd.createGitCmd();
@@ -78,6 +81,93 @@ class GitCmd {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['config', '--global', '--unset-all', name];
             yield exec.exec(`"${this.gitPath}"`, args);
+        });
+    }
+}
+function createSshCmd() {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield SshCmd.createSshCmd();
+    });
+}
+exports.createSshCmd = createSshCmd;
+class SshCmd {
+    // Private constructor; use createSshCmd()
+    constructor() {
+        this.sshAddPath = '';
+        this.sshAgentPath = '';
+        this.dotSshPath = '';
+    }
+    static createSshCmd() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const ret = new SshCmd();
+            ret.sshAddPath = yield io.which('ssh-add', true);
+            ret.sshAgentPath = yield io.which('ssh-agent', true);
+            return ret;
+        });
+    }
+    listKeys() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // list current public key identities
+            core.info(`Running ${this.sshAddPath} -L`);
+            const { exitCode, stdout } = yield exec.getExecOutput(`"${this.sshAddPath}"`, ['-L'], {
+                ignoreReturnCode: true,
+                silent: true,
+            });
+            if (exitCode > 1 || exitCode < 0) {
+                throw new Error(`Failed to run ${this.sshAddPath} -L`);
+            }
+            // take the output and split it on each new line
+            return stdout.trim().split(/\r?\n/);
+        });
+    }
+    loadPrivateKeys(keys) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.debug(`Running ssh-add for each key`);
+            for (const key of keys) {
+                yield exec.exec(`"${this.sshAddPath}"`, ['-'], {
+                    input: Buffer.from(`${key}\n`),
+                    ignoreReturnCode: true,
+                });
+            }
+        });
+    }
+    startAgent() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // start up ssh-agent
+            core.info(`Running ${this.sshAgentPath}`);
+            const { stdout } = yield exec.getExecOutput(`"${this.sshAgentPath}"`, []);
+            // grab up the output as lines
+            const lines = stdout.trim().split(/\r?\n/);
+            for (const line of lines) {
+                const parts = line.match(/^(SSH_AUTH_SOCK|SSH_AGENT_PID)=(.*); export \1/);
+                if (!parts) {
+                    continue;
+                }
+                // export this data for future steps
+                core.exportVariable(parts[1], parts[2]);
+            }
+        });
+    }
+    killAgent() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield exec.getExecOutput(`"${this.sshAgentPath}"`, ['-k']);
+        });
+    }
+    getDotSshPath() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // realistically we want this to be a temporary file
+            // that we don't tinker with the system setup
+            // it will also allow this to be exposed into a Docker
+            // build context to function correctly
+            if (this.dotSshPath === '') {
+                const dotSshPath = path.join(os.homedir(), '.ssh');
+                yield io.mkdirP(dotSshPath);
+                this.dotSshPath = dotSshPath;
+                return dotSshPath;
+            }
+            else {
+                return this.dotSshPath;
+            }
         });
     }
 }
@@ -136,7 +226,7 @@ function main() {
             });
             const privateKeys = ssh.parsePrivateKeys(privateKeyData);
             core.startGroup('Gathering utilities');
-            const sshCmd = yield ssh.createSshCmd();
+            const sshCmd = yield cmds.createSshCmd();
             const gitCmd = yield cmds.createGitCmd();
             core.endGroup();
             core.startGroup('Starting ssh-agent');
@@ -146,7 +236,7 @@ function main() {
             yield sshCmd.loadPrivateKeys(privateKeys);
             core.endGroup();
             core.startGroup('Configuring GitHub deploy keys');
-            const pubKeys = yield sshCmd.listKeys();
+            const pubKeys = yield ssh.getPublicKeys(sshCmd);
             core.info(`Got ${pubKeys.length} key(s) to check`);
             const sshBasePath = yield sshCmd.getDotSshPath();
             core.info(`Using ${sshBasePath} for SSH key storage and config`);
@@ -164,7 +254,7 @@ function cleanup() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.startGroup('Gathering utilities');
-            const sshCmd = yield ssh.createSshCmd();
+            const sshCmd = yield cmds.createSshCmd();
             const gitCmd = yield cmds.createGitCmd();
             core.endGroup();
             core.startGroup('Killing ssh-agent');
@@ -236,13 +326,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.parsePrivateKeys = exports.genSshConfig = exports.computeKeyMapping = exports.getDeployKeys = exports.parseDeployKey = exports.createSshCmd = exports.cleanupDeployKeys = exports.configDeployKeys = void 0;
+exports.parsePrivateKeys = exports.genSshConfig = exports.computeKeyMapping = exports.getDeployKeys = exports.parseDeployKey = exports.getPublicKeys = exports.cleanupDeployKeys = exports.configDeployKeys = void 0;
 const crypto = __importStar(__nccwpck_require__(6113));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
-const os = __importStar(__nccwpck_require__(2037));
 const core = __importStar(__nccwpck_require__(2186));
-const exec_1 = __nccwpck_require__(1514);
 const io = __importStar(__nccwpck_require__(7436));
 const ssh_config_1 = __importDefault(__nccwpck_require__(4113));
 function configDeployKeys(sshPath, pubKeys, gitCmd) {
@@ -326,108 +414,23 @@ function cleanupDeployKeys(gitCmd) {
     });
 }
 exports.cleanupDeployKeys = cleanupDeployKeys;
-function createSshCmd() {
-    return __awaiter(this, void 0, void 0, function* () {
-        return yield SshCmd.createSshCmd();
-    });
-}
-exports.createSshCmd = createSshCmd;
-class SshCmd {
-    // Private constructor; use createSshCmd()
-    constructor() {
-        this.sshAddPath = '';
-        this.sshAgentPath = '';
-        this.dotSshPath = '';
-    }
-    static createSshCmd() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const ret = new SshCmd();
-            ret.sshAddPath = yield io.which('ssh-add', true);
-            ret.sshAgentPath = yield io.which('ssh-agent', true);
-            return ret;
-        });
-    }
-    listKeys() {
-        return __awaiter(this, void 0, void 0, function* () {
-            // list current public key identities
-            core.info(`Running ${this.sshAddPath} -L`);
-            const { exitCode, stdout } = yield (0, exec_1.getExecOutput)(`"${this.sshAddPath}"`, ['-L'], {
-                ignoreReturnCode: true,
-                silent: true,
-            });
-            if (exitCode > 1 || exitCode < 0) {
-                throw new Error(`Failed to run ${this.sshAddPath} -L`);
-            }
-            // take the output and split it on each new line
-            const lines = stdout.trim().split(/\r?\n/);
-            // we'll build up a list of key data to return
-            const ret = [];
-            for (const identity of lines) {
-                // the parts of the identity are split by a space
-                const parts = identity.trim().split(' ');
-                const pubKey = { algo: parts[0], key: parts[1], comment: parts[2] };
-                ret.push(pubKey);
-            }
-            return ret;
-        });
-    }
-    loadPrivateKeys(keys) {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.debug(`Running ssh-add for each key`);
-            for (const key of keys) {
-                yield (0, exec_1.exec)(`"${this.sshAddPath}"`, ['-'], {
-                    input: Buffer.from(`${key}\n`),
-                    ignoreReturnCode: true,
-                });
-            }
-        });
-    }
-    startAgent() {
-        return __awaiter(this, void 0, void 0, function* () {
-            // start up ssh-agent
-            core.info(`Running ${this.sshAgentPath}`);
-            const { stdout } = yield (0, exec_1.getExecOutput)(`"${this.sshAgentPath}"`, []);
-            // grab up the output as lines
-            const lines = stdout.trim().split(/\r?\n/);
-            for (const line of lines) {
-                const parts = line.match(/^(SSH_AUTH_SOCK|SSH_AGENT_PID)=(.*); export \1/);
-                if (!parts) {
-                    continue;
-                }
-                // export this data for future steps
-                core.exportVariable(parts[1], parts[2]);
-            }
-        });
-    }
-    killAgent() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield (0, exec_1.getExecOutput)(`"${this.sshAgentPath}"`, ['-k']);
-        });
-    }
-    getDotSshPath() {
-        return __awaiter(this, void 0, void 0, function* () {
-            // realistically we want this to be a temporary file
-            // that we don't tinker with the system setup
-            // it will also allow this to be exposed into a Docker
-            // build context to function correctly
-            if (this.dotSshPath === '') {
-                const dotSshPath = path.join(os.homedir(), '.ssh');
-                yield io.mkdirP(dotSshPath);
-                this.dotSshPath = dotSshPath;
-                return dotSshPath;
-            }
-            else {
-                return this.dotSshPath;
-            }
-        });
-    }
-}
 function origRepoUri(key) {
     return `git@${key.host}:${key.repo_path}`;
 }
 function mappedRepoUri(key) {
     return `git@${key.mapped_host}:${key.repo_path}`;
 }
+function getPublicKeys(ssh) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const lines = yield ssh.listKeys();
+        return lines.map(line => {
+            // the parts of the identity are split by a space
+            const parts = line.trim().split(' ');
+            return { algo: parts[0], key: parts[1], comment: parts[2] };
+        });
+    });
+}
+exports.getPublicKeys = getPublicKeys;
 const OWNER_REPO_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+\/[_.a-z0-9-]+)?$/i;
 const OWNER_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+)$/i;
 function parseDeployKey(key) {
