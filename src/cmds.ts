@@ -55,12 +55,18 @@ class GitCmd {
   }
 }
 
+export type getDotSshPath = () => Promise<string>;
+export type listKeys = () => Promise<string[]>;
+export type loadPrivateKeys = (keys: string[]) => Promise<void>;
+export type startAgent = () => Promise<void>;
+export type killAgent = () => Promise<void>;
+
 export interface ISshCmd {
-  getDotSshPath(): Promise<string>;
-  listKeys(): Promise<string[]>;
-  loadPrivateKeys(keys: string[]): Promise<void>;
-  startAgent(): Promise<void>;
-  killAgent(): Promise<void>;
+  getDotSshPath: getDotSshPath;
+  listKeys: listKeys;
+  loadPrivateKeys: loadPrivateKeys;
+  startAgent: startAgent;
+  killAgent: killAgent;
 }
 
 export async function createSshCmd(): Promise<ISshCmd> {

@@ -5,6 +5,7 @@ import {
   configDeployKeys,
   genSshConfig,
   getDeployKeys,
+  getPublicKeys,
   parseDeployKey,
   parsePrivateKeys,
 } from '../src/ssh';
@@ -25,6 +26,14 @@ const mockGitCmd: cmds.IGitCmd = {
   rmConfig: jest.fn<cmds.rmConfig>(),
 };
 
+const mockSshCmd: cmds.ISshCmd = {
+  getDotSshPath: jest.fn<cmds.getDotSshPath>(),
+  listKeys: jest.fn<cmds.listKeys>(),
+  loadPrivateKeys: jest.fn<cmds.loadPrivateKeys>(),
+  startAgent: jest.fn<cmds.startAgent>(),
+  killAgent: jest.fn<cmds.killAgent>(),
+};
+
 function generateRsaKeyPair(comment: string): {
   public: string;
   private: string;
@@ -39,26 +48,49 @@ function generateRsaKeyPair(comment: string): {
   };
 }
 
-describe('Private key parsing', () => {
-  it('parse 1 private key', () => {
-    const keypair = generateRsaKeyPair('fake@user');
-    const parsed = parsePrivateKeys(keypair.private);
-    expect(parsed.length).toEqual(1);
+describe('key parsing', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  it('parse 3 private keys', () => {
-    // generate 3 keys and store only the private part
-    const privateKeys = [
+  it('parse 1 key', async () => {
+    const keypair = generateRsaKeyPair('fake@user');
+    mockSshCmd.listKeys = jest.fn(async () => {
+      return Promise.resolve([keypair.public]);
+    });
+    const parsed = parsePrivateKeys(keypair.private);
+    expect(parsed.length).toEqual(1);
+    const pubkeys = await getPublicKeys(mockSshCmd);
+    expect(pubkeys.length).toEqual(1);
+    expect(mockSshCmd.listKeys).toBeCalled();
+  });
+
+  it('parse 3 keys', async () => {
+    // generate 3 keys
+    const keys = [
       generateRsaKeyPair('fake@user'),
       generateRsaKeyPair('something'),
       generateRsaKeyPair('another'),
-    ].map(item => {
+    ];
+    const privateKeys = keys.map(item => {
       return item.private;
+    });
+    mockSshCmd.listKeys = jest.fn(async () => {
+      return Promise.resolve(
+        Promise.resolve(
+          keys.map(item => {
+            return item.public;
+          }),
+        ),
+      );
     });
     // we get our input as one giant string so do that and test the parse
     const keyData = privateKeys.join('\n');
     const parsed = parsePrivateKeys(keyData);
     expect(parsed.length).toEqual(privateKeys.length);
+    const pubkeys = await getPublicKeys(mockSshCmd);
+    expect(pubkeys.length).toEqual(3);
+    expect(mockSshCmd.listKeys).toBeCalled();
   });
 });
 
