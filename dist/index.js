@@ -486,30 +486,19 @@ function writeDeployKey(basePath, key) {
         return keypath;
     });
 }
-function existing(filePath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            return yield fs.promises.stat(filePath);
-        }
-        catch (_) {
-            return undefined;
-        }
-    });
-}
 function writeSshConfig(basePath, keys) {
     return __awaiter(this, void 0, void 0, function* () {
         const localSshConfig = genSshConfig(basePath, keys);
         const sshConfigPath = `${basePath}/config`;
-        const existingConfig = yield existing(sshConfigPath);
-        if (existingConfig !== undefined) {
-            core.info(`Found existing SSH config at ${sshConfigPath}`);
-            const userSshConfigStr = (yield fs.promises.readFile(sshConfigPath)).toString();
-            const userSshConfig = ssh_config_1.default.parse(userSshConfigStr);
-            localSshConfig.push(...userSshConfig);
+        let sshConfigFile = null;
+        try {
+            sshConfigFile = yield fs.promises.open(sshConfigPath, 'a', 0o600);
+            yield sshConfigFile.appendFile('\n');
+            yield sshConfigFile.appendFile(ssh_config_1.default.stringify(localSshConfig));
         }
-        yield fs.promises.writeFile(sshConfigPath, ssh_config_1.default.stringify(localSshConfig), {
-            mode: existingConfig !== undefined ? existingConfig.mode : 0o600,
-        });
+        finally {
+            yield (sshConfigFile === null || sshConfigFile === void 0 ? void 0 : sshConfigFile.close());
+        }
         return sshConfigPath;
     });
 }

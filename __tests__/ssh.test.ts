@@ -163,7 +163,7 @@ describe('GitHub deploy key parsing', () => {
     expect(deployKeyData).not.toBeNull();
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const deployKey = computeKeyMapping(deployKeyData!);
-    const ssh_config = genSshConfig('', [deployKey]);
+    const ssh_config = genSshConfig('.', [deployKey]);
     expect(ssh_config.find({ Host: deployKey.mapped_host })).toBeTruthy();
   });
 });

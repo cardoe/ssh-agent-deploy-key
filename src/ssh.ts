@@ -308,37 +308,20 @@ async function writeDeployKey(
   return keypath;
 }
 
-async function existing(filePath: string): Promise<fs.Stats | undefined> {
-  try {
-    return await fs.promises.stat(filePath);
-  } catch (_) {
-    return undefined;
-  }
-}
-
 async function writeSshConfig(
   basePath: string,
   keys: DeployKey[],
 ): Promise<string> {
   const localSshConfig = genSshConfig(basePath, keys);
   const sshConfigPath = `${basePath}/config`;
-  const existingConfig = await existing(sshConfigPath);
-  if (existingConfig !== undefined) {
-    core.info(`Found existing SSH config at ${sshConfigPath}`);
-    const userSshConfigStr = (
-      await fs.promises.readFile(sshConfigPath)
-    ).toString();
-    const userSshConfig = SSHConfig.parse(userSshConfigStr);
-    localSshConfig.push(...userSshConfig);
+  let sshConfigFile = null;
+  try {
+    sshConfigFile = await fs.promises.open(sshConfigPath, 'a', 0o600);
+    await sshConfigFile.appendFile('\n');
+    await sshConfigFile.appendFile(SSHConfig.stringify(localSshConfig));
+  } finally {
+    await sshConfigFile?.close();
   }
-
-  await fs.promises.writeFile(
-    sshConfigPath,
-    SSHConfig.stringify(localSshConfig),
-    {
-      mode: existingConfig !== undefined ? existingConfig.mode : 0o600,
-    },
-  );
   return sshConfigPath;
 }
 
