@@ -21,6 +21,11 @@ a passphrase.
     ssh-private-key: |
       ${{ secrets.YOUR_KEY }}
       ${{ secrets.ANOTHER_KEY }}
+
+    # Known hosts in addition to the user and global host key database. The
+    # public SSH keys for a host may be obtained using the utility
+    # `ssh-keyscan`. For example, `ssh-keyscan github.com`.
+    ssh-known-hosts: ''
 ```
 <!-- end usage -->
 

@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import * as git from './git';
+import * as cmds from './cmds';
 import * as ssh from './ssh';
 
 async function main(): Promise<void> {
@@ -10,9 +10,11 @@ async function main(): Promise<void> {
     });
     const privateKeys = ssh.parsePrivateKeys(privateKeyData);
 
+    const sshKnownHosts = core.getMultilineInput('ssh-known-hosts');
+
     core.startGroup('Gathering utilities');
-    const sshCmd = await ssh.createSshCmd();
-    const gitCmd = await git.createGitCmd();
+    const sshCmd = await cmds.createSshCmd();
+    const gitCmd = await cmds.createGitCmd();
     core.endGroup();
 
     core.startGroup('Starting ssh-agent');
@@ -23,8 +25,12 @@ async function main(): Promise<void> {
     await sshCmd.loadPrivateKeys(privateKeys);
     core.endGroup();
 
+    core.startGroup('Configuring SSH known_hosts');
+    await ssh.loadKnownHosts(sshCmd, sshKnownHosts);
+    core.endGroup();
+
     core.startGroup('Configuring GitHub deploy keys');
-    const pubKeys = await sshCmd.listKeys();
+    const pubKeys = await ssh.getPublicKeys(sshCmd);
     core.info(`Got ${pubKeys.length} key(s) to check`);
     const sshBasePath = await sshCmd.getDotSshPath();
     core.info(`Using ${sshBasePath} for SSH key storage and config`);
@@ -39,12 +45,16 @@ async function main(): Promise<void> {
 async function cleanup(): Promise<void> {
   try {
     core.startGroup('Gathering utilities');
-    const sshCmd = await ssh.createSshCmd();
-    const gitCmd = await git.createGitCmd();
+    const sshCmd = await cmds.createSshCmd();
+    const gitCmd = await cmds.createGitCmd();
     core.endGroup();
 
     core.startGroup('Killing ssh-agent');
     await sshCmd.killAgent();
+    core.endGroup();
+
+    core.startGroup('Cleaning up SSH known_hosts');
+    await ssh.cleanupKnownHosts(sshCmd);
     core.endGroup();
 
     core.startGroup('Cleaning up GitHub deploy keys');

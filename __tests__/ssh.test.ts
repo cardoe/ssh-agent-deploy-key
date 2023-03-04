@@ -1,10 +1,11 @@
-import * as git from '../src/git';
+import * as cmds from '../src/cmds';
 import {
   cleanupDeployKeys,
   computeKeyMapping,
   configDeployKeys,
   genSshConfig,
   getDeployKeys,
+  getPublicKeys,
   parseDeployKey,
   parsePrivateKeys,
 } from '../src/ssh';
@@ -20,9 +21,19 @@ import {
 } from '@jest/globals';
 import forge from 'node-forge';
 
-const mockGitCmd: git.IGitCmd = {
-  setConfig: jest.fn<git.setConfig>(),
-  rmConfig: jest.fn<git.rmConfig>(),
+const mockGitCmd: cmds.IGitCmd = {
+  setConfig: jest.fn<cmds.setConfig>(),
+  rmConfig: jest.fn<cmds.rmConfig>(),
+};
+
+const mockSshCmd: cmds.ISshCmd = {
+  getDotSshPath: jest.fn<cmds.getDotSshPath>(),
+  listKeys: jest.fn<cmds.listKeys>(),
+  loadPrivateKeys: jest.fn<cmds.loadPrivateKeys>(),
+  startAgent: jest.fn<cmds.startAgent>(),
+  killAgent: jest.fn<cmds.killAgent>(),
+  hasHostKey: jest.fn<cmds.hasHostKey>(),
+  rmHostKey: jest.fn<cmds.rmHostKey>(),
 };
 
 function generateRsaKeyPair(comment: string): {
@@ -39,26 +50,49 @@ function generateRsaKeyPair(comment: string): {
   };
 }
 
-describe('Private key parsing', () => {
-  it('parse 1 private key', () => {
-    const keypair = generateRsaKeyPair('fake@user');
-    const parsed = parsePrivateKeys(keypair.private);
-    expect(parsed.length).toEqual(1);
+describe('key parsing', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  it('parse 3 private keys', () => {
-    // generate 3 keys and store only the private part
-    const privateKeys = [
+  it('parse 1 key', async () => {
+    const keypair = generateRsaKeyPair('fake@user');
+    mockSshCmd.listKeys = jest.fn(async () => {
+      return Promise.resolve([keypair.public]);
+    });
+    const parsed = parsePrivateKeys(keypair.private);
+    expect(parsed.length).toEqual(1);
+    const pubkeys = await getPublicKeys(mockSshCmd);
+    expect(pubkeys.length).toEqual(1);
+    expect(mockSshCmd.listKeys).toBeCalled();
+  });
+
+  it('parse 3 keys', async () => {
+    // generate 3 keys
+    const keys = [
       generateRsaKeyPair('fake@user'),
       generateRsaKeyPair('something'),
       generateRsaKeyPair('another'),
-    ].map(item => {
+    ];
+    const privateKeys = keys.map(item => {
       return item.private;
+    });
+    mockSshCmd.listKeys = jest.fn(async () => {
+      return Promise.resolve(
+        Promise.resolve(
+          keys.map(item => {
+            return item.public;
+          }),
+        ),
+      );
     });
     // we get our input as one giant string so do that and test the parse
     const keyData = privateKeys.join('\n');
     const parsed = parsePrivateKeys(keyData);
     expect(parsed.length).toEqual(privateKeys.length);
+    const pubkeys = await getPublicKeys(mockSshCmd);
+    expect(pubkeys.length).toEqual(3);
+    expect(mockSshCmd.listKeys).toBeCalled();
   });
 });
 
@@ -163,7 +197,7 @@ describe('GitHub deploy key parsing', () => {
     expect(deployKeyData).not.toBeNull();
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const deployKey = computeKeyMapping(deployKeyData!);
-    const ssh_config = genSshConfig('', [deployKey]);
+    const ssh_config = genSshConfig('.', [deployKey]);
     expect(ssh_config.find({ Host: deployKey.mapped_host })).toBeTruthy();
   });
 });
