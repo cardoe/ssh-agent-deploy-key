@@ -6,7 +6,7 @@ import * as core from '@actions/core';
 import { exec, getExecOutput } from '@actions/exec';
 import * as io from '@actions/io';
 import SSHConfig from 'ssh-config';
-import { IGitCmd } from './git';
+import { IGitCmd } from './cmds';
 
 interface MappedHostSaveState {
   mapped_host: string;

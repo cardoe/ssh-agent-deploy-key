@@ -1,7 +1,7 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 3374:
+/***/ 7825:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -124,7 +124,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const git = __importStar(__nccwpck_require__(3374));
+const cmds = __importStar(__nccwpck_require__(7825));
 const ssh = __importStar(__nccwpck_require__(18));
 function main() {
     var _a;
@@ -137,7 +137,7 @@ function main() {
             const privateKeys = ssh.parsePrivateKeys(privateKeyData);
             core.startGroup('Gathering utilities');
             const sshCmd = yield ssh.createSshCmd();
-            const gitCmd = yield git.createGitCmd();
+            const gitCmd = yield cmds.createGitCmd();
             core.endGroup();
             core.startGroup('Starting ssh-agent');
             yield sshCmd.startAgent();
@@ -165,7 +165,7 @@ function cleanup() {
         try {
             core.startGroup('Gathering utilities');
             const sshCmd = yield ssh.createSshCmd();
-            const gitCmd = yield git.createGitCmd();
+            const gitCmd = yield cmds.createGitCmd();
             core.endGroup();
             core.startGroup('Killing ssh-agent');
             yield sshCmd.killAgent();

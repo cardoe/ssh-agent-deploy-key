@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import * as git from './git';
+import * as cmds from './cmds';
 import * as ssh from './ssh';
 
 async function main(): Promise<void> {
@@ -12,7 +12,7 @@ async function main(): Promise<void> {
 
     core.startGroup('Gathering utilities');
     const sshCmd = await ssh.createSshCmd();
-    const gitCmd = await git.createGitCmd();
+    const gitCmd = await cmds.createGitCmd();
     core.endGroup();
 
     core.startGroup('Starting ssh-agent');
@@ -40,7 +40,7 @@ async function cleanup(): Promise<void> {
   try {
     core.startGroup('Gathering utilities');
     const sshCmd = await ssh.createSshCmd();
-    const gitCmd = await git.createGitCmd();
+    const gitCmd = await cmds.createGitCmd();
     core.endGroup();
 
     core.startGroup('Killing ssh-agent');

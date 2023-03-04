@@ -1,4 +1,4 @@
-import * as git from '../src/git';
+import * as cmds from '../src/cmds';
 import {
   cleanupDeployKeys,
   computeKeyMapping,
@@ -20,9 +20,9 @@ import {
 } from '@jest/globals';
 import forge from 'node-forge';
 
-const mockGitCmd: git.IGitCmd = {
-  setConfig: jest.fn<git.setConfig>(),
-  rmConfig: jest.fn<git.rmConfig>(),
+const mockGitCmd: cmds.IGitCmd = {
+  setConfig: jest.fn<cmds.setConfig>(),
+  rmConfig: jest.fn<cmds.rmConfig>(),
 };
 
 function generateRsaKeyPair(comment: string): {
