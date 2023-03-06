@@ -46,7 +46,7 @@ export async function configDeployKeys(
     for (const mappedHost in sshHostMapping) {
       let replace = true;
       for (const target of sshHostMapping[mappedHost]) {
-        gitCmd.setConfig(`url."${mappedHost}".insteadOf`, target, replace);
+        gitCmd.setConfig(`url.${mappedHost}.insteadOf`, target, replace);
         replace = false;
       }
     }
@@ -99,7 +99,7 @@ export async function cleanupDeployKeys(gitCmd: IGitCmd): Promise<void> {
   if (sshMappedHosts) {
     for (const mappedHost of sshMappedHosts) {
       core.info(`Removing ${mappedHost.mapped_uri} override in git config`);
-      gitCmd.rmConfig(`url."${mappedHost.mapped_uri}".insteadOf`);
+      gitCmd.rmConfig(`url.${mappedHost.mapped_uri}.insteadOf`);
     }
   }
 }

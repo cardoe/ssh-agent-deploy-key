@@ -4,7 +4,6 @@ on: # rebuild any PRs and main branch changes
   push:
     branches:
       - main
-      - 'releases/*'
 
 jobs:
   build: # make sure build/ci work properly
@@ -31,3 +30,8 @@ jobs:
             ${{ secrets.RSA_DEPLOY }}
             ${{ secrets.ECDSA_KEY }}
             ${{ secrets.ECDSA_DEPLOY }}
+
+      - name: Show configs
+        run: |
+          cat $HOME/.gitconfig
+          cat $HOME/.ssh/config
