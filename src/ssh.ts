@@ -96,8 +96,11 @@ export async function cleanupDeployKeys(gitCmd: IGitCmd): Promise<void> {
     await fs.promises.writeFile(sshConfigPath, sshConfig);
   }
 
-  for (const mappedHost of sshMappedHosts) {
-    gitCmd.rmConfig(`url."${mappedHost.mapped_uri}".insteadOf`);
+  if (sshMappedHosts) {
+    for (const mappedHost of sshMappedHosts) {
+      core.info(`Removing ${mappedHost.mapped_uri} override in git config`);
+      gitCmd.rmConfig(`url."${mappedHost.mapped_uri}".insteadOf`);
+    }
   }
 }
 
