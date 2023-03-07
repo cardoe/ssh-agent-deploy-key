@@ -39,7 +39,7 @@ need a way to distingish them from each other. That's what this action provides.
 ## Setup
 
 Create your keys with a comment identifying the repo they are for. e.g.
-`ssh-keygen ... -C 'git@github.com:org/repo.git' and save the private key into
+`ssh-keygen ... -C 'git@github.com:org/repo.git'` and save the private key into
 a GitHub Actions secret. Then supply that secret to the `ssh-private-key`
 variable provided by this action.
 
