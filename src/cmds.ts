@@ -106,12 +106,15 @@ class SshCmd {
       },
     );
 
-    if (exitCode > 1 || exitCode < 0) {
+    if (exitCode === 0) {
+      // take the output and split it on each new line
+      return stdout.trim().split(/\r?\n/);
+    } else if (exitCode === 1) {
+      // nothing to return
+      return [];
+    } else {
       throw new Error(`Failed to run ${this.sshAddPath} -L`);
     }
-
-    // take the output and split it on each new line
-    return stdout.trim().split(/\r?\n/);
   }
 
   async loadPrivateKeys(keys: string[]): Promise<void> {
