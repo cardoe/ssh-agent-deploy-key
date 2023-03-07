@@ -194,7 +194,7 @@ export function genSshConfig(basePath: string, keys: DeployKey[]) {
     config.append({
       Host: key.mapped_host,
       HostName: key.host,
-      IdentityFile: `${basePath}/${key.filename}`,
+      IdentityFile: path.join(basePath, key.filename),
       IdentitiesOnly: 'yes',
     });
   }
@@ -215,7 +215,7 @@ async function writeSshConfig(
   keys: DeployKey[],
 ): Promise<string> {
   const localSshConfig = genSshConfig(basePath, keys);
-  const sshConfigPath = `${basePath}/config`;
+  const sshConfigPath = path.join(basePath, 'config');
   let sshConfigFile = null;
   try {
     sshConfigFile = await fs.promises.open(sshConfigPath, 'a', 0o600);
