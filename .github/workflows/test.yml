@@ -33,5 +33,5 @@ jobs:
 
       - name: Show configs
         run: |
-          [ -f $HOME/.gitconfig ] && cat $HOME/.gitconfig
-          [ -f $HOME/.ssh/config ] && cat $HOME/.ssh/config
+          [ -f $HOME/.gitconfig ] && cat $HOME/.gitconfig || :
+          [ -f $HOME/.ssh/config ] && cat $HOME/.ssh/config || :
