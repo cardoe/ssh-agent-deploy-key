@@ -13,3 +13,6 @@ updates:
       # ignore newer versions since GitHub Actions uses node 16.x
       - dependency-name: "@types/node"
         versions: [">=17.0.0"]
+      # For all packages, ignore all patch updates
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
