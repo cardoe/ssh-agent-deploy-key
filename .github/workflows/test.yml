@@ -1,6 +1,9 @@
 name: 'build-test'
-on: # rebuild any PRs and main branch changes
-  pull_request:
+on:
+  # use PR target so that we run in the context of
+  # this repo so that the secrets used in the tests
+  # are accessible
+  pull_request_target:
   push:
     branches:
       - main
