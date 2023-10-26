@@ -46,7 +46,7 @@ export async function configDeployKeys(
     for (const mappedHost in sshHostMapping) {
       let replace = true;
       for (const target of sshHostMapping[mappedHost]) {
-        gitCmd.setConfig(`url.${mappedHost}.insteadOf`, target, replace);
+        await gitCmd.setConfig(`url.${mappedHost}.insteadOf`, target, replace);
         replace = false;
       }
     }
