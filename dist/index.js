@@ -386,7 +386,7 @@ function configDeployKeys(sshPath, pubKeys, gitCmd) {
             for (const mappedHost in sshHostMapping) {
                 let replace = true;
                 for (const target of sshHostMapping[mappedHost]) {
-                    gitCmd.setConfig(`url.${mappedHost}.insteadOf`, target, replace);
+                    yield gitCmd.setConfig(`url.${mappedHost}.insteadOf`, target, replace);
                     replace = false;
                 }
             }
