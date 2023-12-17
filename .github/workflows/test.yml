@@ -1,4 +1,4 @@
-name: 'build-test'
+name: test
 on:
   # use PR target so that we run in the context of
   # this repo so that the secrets used in the tests
@@ -9,15 +9,6 @@ on:
       - main
 
 jobs:
-  build: # make sure build/ci work properly
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: |
-          npm install
-      - run: |
-          npm run all
-      - uses: codecov/codecov-action@v3
   test: # make sure the action works on a clean machine without building
     runs-on: ubuntu-latest
     steps:
