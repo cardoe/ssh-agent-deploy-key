@@ -4108,6 +4108,9 @@ function parse(text) {
             else if (chr === '\\') {
                 escaped = true;
             }
+            else if (chr === '#' && !quoted) {
+                break;
+            }
             else {
                 val += chr;
             }
@@ -4149,12 +4152,15 @@ function parse(text) {
             else if (quoted) {
                 val += chr;
             }
-            else if (/[ \t]/.test(chr)) {
+            else if (/[ \t=]/.test(chr)) {
                 if (val) {
                     results.push(val);
                     val = '';
                 }
                 // otherwise ignore the space
+            }
+            else if (chr === '#') {
+                break;
             }
             else {
                 val += chr;
