@@ -4,6 +4,7 @@
     "config:recommended",
     ":automergeBranch",
     ":automergeLinters",
-    ":automergeTypes"
+    ":automergeTypes",
+    ":automergeMinor"
   ]
 }
