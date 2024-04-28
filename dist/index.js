@@ -3842,13 +3842,21 @@ class SSHConfig extends Array {
     compute(opts) {
         if (typeof opts === 'string')
             opts = { Host: opts };
+        let userInfo;
+        try {
+            userInfo = os_1.default.userInfo();
+        }
+        catch (_a) {
+            // os.userInfo() throws a SystemError if a user has no username or homedir.
+            userInfo = { username: process.env.USER || process.env.USERNAME || '' };
+        }
         const context = {
             params: {
                 Host: opts.Host,
                 HostName: opts.Host,
                 OriginalHost: opts.Host,
-                User: os_1.default.userInfo().username,
-                LocalUser: os_1.default.userInfo().username,
+                User: userInfo.username,
+                LocalUser: userInfo.username,
             },
             inFinalPass: false,
             doFinalPass: false,
