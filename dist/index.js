@@ -238,8 +238,8 @@ const core = __importStar(__nccwpck_require__(2186));
 const cmds = __importStar(__nccwpck_require__(7825));
 const ssh = __importStar(__nccwpck_require__(18));
 function main() {
-    var _a;
     return __awaiter(this, void 0, void 0, function* () {
+        var _a;
         try {
             const privateKeyData = core.getInput('ssh-private-key', {
                 required: true,
@@ -275,8 +275,8 @@ function main() {
     });
 }
 function cleanup() {
-    var _a;
     return __awaiter(this, void 0, void 0, function* () {
+        var _a;
         try {
             core.startGroup('Gathering utilities');
             const sshCmd = yield cmds.createSshCmd();
