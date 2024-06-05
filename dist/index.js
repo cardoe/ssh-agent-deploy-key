@@ -3768,7 +3768,7 @@ var LineType;
 (function (LineType) {
     LineType[LineType["DIRECTIVE"] = 1] = "DIRECTIVE";
     LineType[LineType["COMMENT"] = 2] = "COMMENT";
-})(LineType = exports.LineType || (exports.LineType = {}));
+})(LineType || (exports.LineType = LineType = {}));
 const MULTIPLE_VALUE_PROPS = [
     'IdentityFile',
     'LocalForward',
@@ -3899,11 +3899,11 @@ class SSHConfig extends Array {
                             }
                         }
                     }
-                    if (canonicalDomains.length > 0 && canonicalizeHostName) {
+                    if (canonicalDomains.length > 0 && canonicalizeHostName && context.params.Host === context.params.OriginalHost) {
                         for (const domain of canonicalDomains) {
-                            const host = `${line.value}.${domain}`;
-                            const { stdout } = (0, child_process_1.spawnSync)('nslookup', [host]);
-                            if (!/server can't find/.test(stdout.toString())) {
+                            const host = `${context.params.OriginalHost}.${domain}`;
+                            const { status, stderr } = (0, child_process_1.spawnSync)('nslookup', [host]);
+                            if (status === 0 && !/can't find/.test(stderr.toString())) {
                                 context.params.Host = host;
                                 setProperty('Host', host);
                                 doPass();
@@ -4053,9 +4053,9 @@ class SSHConfig extends Array {
         return config;
     }
 }
-exports["default"] = SSHConfig;
 SSHConfig.DIRECTIVE = LineType.DIRECTIVE;
 SSHConfig.COMMENT = LineType.COMMENT;
+exports["default"] = SSHConfig;
 /**
  * Parse SSH config text into structured object.
  */
@@ -4167,7 +4167,7 @@ function parse(text) {
                 }
                 // otherwise ignore the space
             }
-            else if (chr === '#') {
+            else if (chr === '#' && results.length > 0) {
                 break;
             }
             else {
