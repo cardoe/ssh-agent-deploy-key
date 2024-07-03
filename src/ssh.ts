@@ -170,9 +170,7 @@ export function parseDeployKey(key: PubKey): DeployKeyMatch | null {
 }
 
 export function getDeployKeys(keys: PubKey[]): DeployKeyMatch[] {
-  return keys
-    .map(parseDeployKey)
-    .filter(key => key != null) as DeployKeyMatch[];
+  return keys.map(parseDeployKey).filter(key => key != null);
 }
 
 export function computeKeyMapping(key: DeployKeyMatch): DeployKey {
@@ -251,7 +249,7 @@ export async function loadKnownHosts(
           return null;
         }
       })
-      .filter(item => item !== null) as string[],
+      .filter(item => item !== null),
   );
 
   // check for hosts that already exist to skip them
