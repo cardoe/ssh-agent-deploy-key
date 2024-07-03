@@ -39,7 +39,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createSshCmd = exports.createGitCmd = void 0;
+exports.createGitCmd = createGitCmd;
+exports.createSshCmd = createSshCmd;
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const io = __importStar(__nccwpck_require__(7436));
@@ -50,7 +51,6 @@ function createGitCmd() {
         return yield GitCmd.createGitCmd();
     });
 }
-exports.createGitCmd = createGitCmd;
 class GitCmd {
     // Private constructor; use createSshCmd()
     constructor() {
@@ -89,7 +89,6 @@ function createSshCmd() {
         return yield SshCmd.createSshCmd();
     });
 }
-exports.createSshCmd = createSshCmd;
 class SshCmd {
     // Private constructor; use createSshCmd()
     constructor() {
@@ -354,7 +353,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.cleanupKnownHosts = exports.loadKnownHosts = exports.parsePrivateKeys = exports.genSshConfig = exports.computeKeyMapping = exports.getDeployKeys = exports.parseDeployKey = exports.getPublicKeys = exports.cleanupDeployKeys = exports.configDeployKeys = void 0;
+exports.configDeployKeys = configDeployKeys;
+exports.cleanupDeployKeys = cleanupDeployKeys;
+exports.getPublicKeys = getPublicKeys;
+exports.parseDeployKey = parseDeployKey;
+exports.getDeployKeys = getDeployKeys;
+exports.computeKeyMapping = computeKeyMapping;
+exports.genSshConfig = genSshConfig;
+exports.parsePrivateKeys = parsePrivateKeys;
+exports.loadKnownHosts = loadKnownHosts;
+exports.cleanupKnownHosts = cleanupKnownHosts;
 const crypto = __importStar(__nccwpck_require__(6113));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -400,7 +408,6 @@ function configDeployKeys(sshPath, pubKeys, gitCmd) {
         return keys.length;
     });
 }
-exports.configDeployKeys = configDeployKeys;
 function cleanupDeployKeys(gitCmd) {
     return __awaiter(this, void 0, void 0, function* () {
         // attempt to parse the data from the saved state
@@ -444,7 +451,6 @@ function cleanupDeployKeys(gitCmd) {
         }
     });
 }
-exports.cleanupDeployKeys = cleanupDeployKeys;
 function origRepoUri(key) {
     return `git@${key.host}:${key.repo_path}`;
 }
@@ -461,7 +467,6 @@ function getPublicKeys(ssh) {
         });
     });
 }
-exports.getPublicKeys = getPublicKeys;
 const OWNER_REPO_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+\/[_.a-z0-9-]+)?$/i;
 const OWNER_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+)$/i;
 function parseDeployKey(key) {
@@ -484,13 +489,9 @@ function parseDeployKey(key) {
     core.info(`key comment '${key.comment}' did not match GitHub deploy key pattern`);
     return null;
 }
-exports.parseDeployKey = parseDeployKey;
 function getDeployKeys(keys) {
-    return keys
-        .map(parseDeployKey)
-        .filter(key => key != null);
+    return keys.map(parseDeployKey).filter(key => key != null);
 }
-exports.getDeployKeys = getDeployKeys;
 function computeKeyMapping(key) {
     // generates a mapping for the deploy key using a hash of the
     // repo/org info
@@ -498,7 +499,6 @@ function computeKeyMapping(key) {
     const type = key.org ? 'org' : 'repo';
     return Object.assign(Object.assign({}, key), { filename: `${type}-${hash}.pub`, mapped_host: `${type}-${hash}.${key.host}` });
 }
-exports.computeKeyMapping = computeKeyMapping;
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function genSshConfig(basePath, keys) {
     const config = new ssh_config_1.default();
@@ -512,7 +512,6 @@ function genSshConfig(basePath, keys) {
     }
     return config;
 }
-exports.genSshConfig = genSshConfig;
 function writeDeployKey(basePath, key) {
     return __awaiter(this, void 0, void 0, function* () {
         const keypath = path.join(basePath, key.filename);
@@ -540,7 +539,6 @@ const KEY_MATCH = /-----BEGIN OPENSSH PRIVATE KEY-----[\r\nA-Za-z0-9+=/]+-----EN
 function parsePrivateKeys(data) {
     return Array.from(data.matchAll(KEY_MATCH), m => m[0].replace(/\r\n/g, '\n'));
 }
-exports.parsePrivateKeys = parsePrivateKeys;
 function loadKnownHosts(sshCmd, keys) {
     return __awaiter(this, void 0, void 0, function* () {
         const sshBasePath = yield sshCmd.getDotSshPath();
@@ -583,7 +581,6 @@ function loadKnownHosts(sshCmd, keys) {
         return [...hostnames];
     });
 }
-exports.loadKnownHosts = loadKnownHosts;
 function cleanupKnownHosts(sshCmd) {
     return __awaiter(this, void 0, void 0, function* () {
         let sshKnownHosts = [];
@@ -599,7 +596,6 @@ function cleanupKnownHosts(sshCmd) {
         }
     });
 }
-exports.cleanupKnownHosts = cleanupKnownHosts;
 
 
 /***/ }),
