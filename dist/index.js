@@ -3750,7 +3750,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.stringify = exports.parse = exports.LineType = void 0;
+exports.LineType = void 0;
+exports.parse = parse;
+exports.stringify = stringify;
 const glob_1 = __importDefault(__nccwpck_require__(3446));
 const child_process_1 = __nccwpck_require__(2081);
 const os_1 = __importDefault(__nccwpck_require__(2037));
@@ -3816,7 +3818,8 @@ function match(criteria, context) {
     };
     for (const key in criteria) {
         const criterion = criteria[key];
-        if (!testCriterion(key, criterion)) {
+        const values = Array.isArray(criterion) ? criterion.map(({ val }) => val) : criterion;
+        if (!testCriterion(key, values)) {
             return false;
         }
     }
@@ -3880,7 +3883,7 @@ class SSHConfig extends Array {
             for (const line of this) {
                 if (line.type !== LineType.DIRECTIVE)
                     continue;
-                if (line.param === 'Host' && (0, glob_1.default)(line.value, context.params.Host)) {
+                if (line.param === 'Host' && (0, glob_1.default)(Array.isArray(line.value) ? line.value.map(({ val }) => val) : line.value, context.params.Host)) {
                     let canonicalizeHostName = false;
                     let canonicalDomains = [];
                     setProperty(line.param, line.value);
@@ -3891,7 +3894,7 @@ class SSHConfig extends Array {
                                 canonicalizeHostName = true;
                             }
                             if (/^CanonicalDomains$/i.test(subline.param) && Array.isArray(subline.value)) {
-                                canonicalDomains = subline.value;
+                                canonicalDomains = subline.value.map(({ val }) => val);
                             }
                         }
                     }
@@ -3971,7 +3974,7 @@ class SSHConfig extends Array {
                 type: LineType.DIRECTIVE,
                 param,
                 separator: ' ',
-                value,
+                value: Array.isArray(value) ? value.map((val, i) => ({ val, separator: i === 0 ? '' : ' ' })) : value,
                 before: sectionLineFound ? indent : indent.replace(/  |\t/, ''),
                 after: '\n',
             };
@@ -4019,7 +4022,7 @@ class SSHConfig extends Array {
                 type: LineType.DIRECTIVE,
                 param,
                 separator: ' ',
-                value,
+                value: Array.isArray(value) ? value.map((val, i) => ({ val, separator: i === 0 ? '' : ' ' })) : value,
                 before: '',
                 after: '\n',
             };
@@ -4140,6 +4143,11 @@ function parse(text) {
     function values() {
         const results = [];
         let val = '';
+        // whether current value is quoted or not
+        let valQuoted = false;
+        // the separator preceding current value
+        let valSeparator = ' ';
+        // whether current context is within quotations or not
         let quoted = false;
         let escaped = false;
         while (chr && !RE_LINE_BREAK.test(chr)) {
@@ -4155,11 +4163,14 @@ function parse(text) {
             }
             else if (quoted) {
                 val += chr;
+                valQuoted = true;
             }
             else if (/[ \t=]/.test(chr)) {
                 if (val) {
-                    results.push(val);
+                    results.push({ val, separator: valSeparator, quoted: valQuoted });
                     val = '';
+                    valQuoted = false;
+                    valSeparator = chr;
                 }
                 // otherwise ignore the space
             }
@@ -4172,11 +4183,11 @@ function parse(text) {
             chr = next();
         }
         if (quoted || escaped) {
-            throw new Error(`Unexpected line break at ${results.concat(val).join(' ')}`);
+            throw new Error(`Unexpected line break at ${results.map(({ val }) => val).concat(val).join(' ')}`);
         }
         if (val)
-            results.push(val);
-        return results.length > 1 ? results : results[0];
+            results.push({ val, separator: valSeparator, quoted: valQuoted });
+        return results.length > 1 ? results : results[0].val;
     }
     function directive() {
         const type = LineType.DIRECTIVE;
@@ -4197,11 +4208,11 @@ function parse(text) {
         if (/^Match$/i.test(param)) {
             const criteria = {};
             if (typeof result.value === 'string') {
-                result.value = [result.value];
+                result.value = [{ val: result.value, separator: '', quoted: result.quoted }];
             }
             let i = 0;
             while (i < result.value.length) {
-                const keyword = result.value[i];
+                const { val: keyword } = result.value[i];
                 switch (keyword.toLowerCase()) {
                     case 'all':
                     case 'canonical':
@@ -4213,7 +4224,7 @@ function parse(text) {
                         if (i + 1 >= result.value.length) {
                             throw new Error(`Missing value for match criteria ${keyword}`);
                         }
-                        criteria[keyword] = result.value[i + 1];
+                        criteria[keyword] = result.value[i + 1].val;
                         i += 2;
                         break;
                 }
@@ -4252,7 +4263,6 @@ function parse(text) {
     }
     return configWas;
 }
-exports.parse = parse;
 /**
  * Stringify structured object into SSH config text.
  */
@@ -4260,7 +4270,11 @@ function stringify(config) {
     let str = '';
     function formatValue(value, quoted) {
         if (Array.isArray(value)) {
-            return value.map(chunk => formatValue(chunk, RE_SPACE.test(chunk))).join(' ');
+            let result = '';
+            for (const { val, separator, quoted } of value) {
+                result += (result ? separator : '') + formatValue(val, quoted || RE_SPACE.test(val));
+            }
+            return result;
         }
         return quoted ? `"${value}"` : value;
     }
@@ -4270,14 +4284,14 @@ function stringify(config) {
         const value = formatValue(line.value, quoted);
         return `${line.param}${line.separator}${value}`;
     }
-    const format = line => {
+    const format = (line) => {
         str += line.before;
         if (line.type === LineType.COMMENT) {
             str += line.content;
         }
         else if (line.type === LineType.DIRECTIVE && MULTIPLE_VALUE_PROPS.includes(line.param)) {
-            [].concat(line.value).forEach(function (value, i, values) {
-                str += formatDirective({ ...line, value });
+            (Array.isArray(line.value) ? line.value : [line.value]).forEach((value, i, values) => {
+                str += formatDirective({ ...line, value: typeof value !== 'string' ? value.val : value });
                 if (i < values.length - 1)
                     str += `\n${line.before}`;
             });
@@ -4286,14 +4300,13 @@ function stringify(config) {
             str += formatDirective(line);
         }
         str += line.after;
-        if (line.config) {
+        if ('config' in line) {
             line.config.forEach(format);
         }
     };
     config.forEach(format);
     return str;
 }
-exports.stringify = stringify;
 //# sourceMappingURL=ssh-config.js.map
 
 /***/ }),
