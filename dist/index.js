@@ -416,7 +416,7 @@ function cleanupDeployKeys(gitCmd) {
         try {
             sshMappedHosts = JSON.parse(core.getState('SSH_MAPPED_HOSTS'));
         }
-        catch (e) {
+        catch (_e) {
             // nothing to clean up
         }
         // $HOME/.ssh/config by default
@@ -426,7 +426,7 @@ function cleanupDeployKeys(gitCmd) {
         try {
             keyFiles = JSON.parse(core.getState('SSH_KEY_FILES'));
         }
-        catch (e) {
+        catch (_e) {
             // nothing to clean up
         }
         for (const file of keyFiles) {
@@ -549,7 +549,7 @@ function loadKnownHosts(sshCmd, keys) {
             try {
                 return key.split(' ')[0];
             }
-            catch (e) {
+            catch (_e) {
                 return null;
             }
         })
@@ -565,7 +565,7 @@ function loadKnownHosts(sshCmd, keys) {
             try {
                 hostname = key.split(' ')[0];
             }
-            catch (e) {
+            catch (_e) {
                 hostname = null;
             }
             if (hostname === null || !hostnames.has(hostname)) {
@@ -587,7 +587,7 @@ function cleanupKnownHosts(sshCmd) {
         try {
             sshKnownHosts = JSON.parse(core.getState('SSH_KNOWN_HOSTS'));
         }
-        catch (e) {
+        catch (_e) {
             // nothing to clean up
         }
         for (const hostname of sshKnownHosts) {

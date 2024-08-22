@@ -68,7 +68,7 @@ export async function cleanupDeployKeys(gitCmd: IGitCmd): Promise<void> {
     sshMappedHosts = JSON.parse(
       core.getState('SSH_MAPPED_HOSTS'),
     ) as MappedHostSaveState[];
-  } catch (e) {
+  } catch (_e) {
     // nothing to clean up
   }
   // $HOME/.ssh/config by default
@@ -77,7 +77,7 @@ export async function cleanupDeployKeys(gitCmd: IGitCmd): Promise<void> {
   let keyFiles: string[] = [];
   try {
     keyFiles = JSON.parse(core.getState('SSH_KEY_FILES')) as string[];
-  } catch (e) {
+  } catch (_e) {
     // nothing to clean up
   }
   for (const file of keyFiles) {
@@ -245,7 +245,7 @@ export async function loadKnownHosts(
         // parse out the hostname from the known_host entry to see if we need to add it
         try {
           return key.split(' ')[0];
-        } catch (e) {
+        } catch (_e) {
           return null;
         }
       })
@@ -263,7 +263,7 @@ export async function loadKnownHosts(
     let hostname;
     try {
       hostname = key.split(' ')[0];
-    } catch (e) {
+    } catch (_e) {
       hostname = null;
     }
 
@@ -286,7 +286,7 @@ export async function cleanupKnownHosts(sshCmd: ISshCmd): Promise<void> {
   let sshKnownHosts: string[] = [];
   try {
     sshKnownHosts = JSON.parse(core.getState('SSH_KNOWN_HOSTS')) as string[];
-  } catch (e) {
+  } catch (_e) {
     // nothing to clean up
   }
 
