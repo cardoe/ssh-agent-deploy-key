@@ -6,5 +6,10 @@
     ":automergeLinters",
     ":automergeTypes",
     ":automergeMinor"
-  ]
+  ],
+  "postUpgradeTasks": {
+    "commands": ["npm run all"],
+    "fileFilters": ["package-lock.json", "dist/*"],
+    "executionMode": "update"
+  }
 }

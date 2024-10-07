@@ -1,0 +1,25 @@
+name: Renovate
+on:
+  schedule:
+    - cron: '0/15 * * * *'
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get token
+        id: get_token
+        uses: actions/create-github-app-token@v1
+        with:
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ vars.APP_ID }}
+          owner: ${{ github.repository_owner }}
+          repositories: 'ssh-agent-deploy-key'
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Self-hosted Renovate
+        uses: renovatebot/github-action@v40.3.1
+        with:
+          token: '${{ steps.get_token.outputs.token }}'
+        env:
+          RENOVATE_PLATFORM_COMMIT: 'true'
+          RENOVATE_ALLOWED_POST_UPGRADE_COMMANDS: 'npm run all'
