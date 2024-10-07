@@ -24,3 +24,4 @@ jobs:
         env:
           RENOVATE_PLATFORM_COMMIT: 'true'
           RENOVATE_ALLOWED_POST_UPGRADE_COMMANDS: 'npm run all'
+          RENOVATE_AUTODISCOVER: 'true'
