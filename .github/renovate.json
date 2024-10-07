@@ -7,6 +7,9 @@
     ":automergeTypes",
     ":automergeMinor"
   ],
+  "allowedPostUpgradeCommands": [
+    "npm run all"
+  ],
   "postUpgradeTasks": {
     "commands": ["npm run all"],
     "fileFilters": ["package-lock.json", "dist/*"],
