@@ -8,7 +8,7 @@
     ":automergeMinor"
   ],
   "postUpgradeTasks": {
-    "commands": ["npm run all"],
+    "commands": ["npm ci", "npm run all"],
     "fileFilters": ["package-lock.json", "dist/*"],
     "executionMode": "update"
   }
