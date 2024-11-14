@@ -3983,18 +3983,20 @@ class SSHConfig extends Array {
         };
         const obj = {};
         const setProperty = (name, value) => {
+            const val = Array.isArray(value) ? value.map(({ val }) => val) : value;
+            const val0 = Array.isArray(val) ? val[0] : val;
             if (MULTIPLE_VALUE_PROPS.includes(name)) {
-                const list = obj[name] || (obj[name] = []);
-                list.push(value);
+                const list = (obj[name] || (obj[name] = []));
+                list.push(...[].concat(val));
             }
             else if (obj[name] == null) {
                 if (name === 'HostName') {
-                    context.params.HostName = value;
+                    context.params.HostName = val0;
                 }
                 else if (name === 'User') {
-                    context.params.User = value;
+                    context.params.User = val0;
                 }
-                obj[name] = value;
+                obj[name] = val;
             }
         };
         if (opts.User !== undefined) {
