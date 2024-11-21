@@ -5,6 +5,7 @@
     "customManagers:githubActionsVersions",
     "helpers:pinGitHubActionDigests",
     ":approveMajorUpdates",
+    ":automergeRequireAllStatusChecks",
     ":automergeBranch",
     ":automergeDigest",
     ":automergeLinters",
