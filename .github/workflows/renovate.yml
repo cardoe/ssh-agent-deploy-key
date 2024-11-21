@@ -16,12 +16,11 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: 'ssh-agent-deploy-key'
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
       - name: Self-hosted Renovate
         uses: renovatebot/github-action@e02bf7b1c996027e55e910400653576a8293246c # v41.0.3
         with:
+          docker-cmd-file: .github/renovate-entrypoint.sh
+          docker-user: root
           token: '${{ steps.get_token.outputs.token }}'
         env:
           RENOVATE_PLATFORM_COMMIT: 'true'
