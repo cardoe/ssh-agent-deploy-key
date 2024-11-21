@@ -12,7 +12,6 @@
     ":automergeTypes",
     ":automergeMinor"
   ],
-  "allowedPostUpgradeCommands": ["^npm ci$", "^npm run all$"],
   "postUpgradeTasks": {
     "commands": ["npm ci", "npm run all"],
     "fileFilters": ["package-lock.json", "dist/*"],
