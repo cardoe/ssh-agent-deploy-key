@@ -3918,7 +3918,7 @@ var LineType;
     LineType[LineType["DIRECTIVE"] = 1] = "DIRECTIVE";
     LineType[LineType["COMMENT"] = 2] = "COMMENT";
 })(LineType || (exports.LineType = LineType = {}));
-const MULTIPLE_VALUE_PROPS = [
+const REPEATABLE_DIRECTIVES = [
     'IdentityFile',
     'LocalForward',
     'RemoteForward',
@@ -4013,9 +4013,20 @@ class SSHConfig extends Array {
         };
         const obj = {};
         const setProperty = (name, value) => {
-            const val = Array.isArray(value) ? value.map(({ val }) => val) : value;
+            let val;
+            if (Array.isArray(value)) {
+                if (/ProxyCommand/i.test(name)) {
+                    val = value.map(({ val, separator }) => `${separator}${val}`).join('').trim();
+                }
+                else {
+                    val = value.map(({ val }) => val);
+                }
+            }
+            else {
+                val = value;
+            }
             const val0 = Array.isArray(val) ? val[0] : val;
-            if (MULTIPLE_VALUE_PROPS.includes(name)) {
+            if (REPEATABLE_DIRECTIVES.includes(name)) {
                 const list = (obj[name] || (obj[name] = []));
                 list.push(...[].concat(val));
             }
@@ -4442,7 +4453,7 @@ function stringify(config) {
         if (line.type === LineType.COMMENT) {
             str += line.content;
         }
-        else if (line.type === LineType.DIRECTIVE && MULTIPLE_VALUE_PROPS.includes(line.param)) {
+        else if (line.type === LineType.DIRECTIVE && REPEATABLE_DIRECTIVES.includes(line.param)) {
             (Array.isArray(line.value) ? line.value : [line.value]).forEach((value, i, values) => {
                 str += formatDirective({ ...line, value: typeof value !== 'string' ? value.val : value });
                 if (i < values.length - 1)
