@@ -17,7 +17,7 @@ jobs:
           repositories: 'ssh-agent-deploy-key'
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Self-hosted Renovate
-        uses: renovatebot/github-action@3f10d7a25cf0aa7b37519aa771ed9143fcbb5da5 # v41.0.10
+        uses: renovatebot/github-action@d385c88822a237acaead89c462fa0aef7502748f # v41.0.11
         with:
           docker-cmd-file: .github/renovate-entrypoint.sh
           docker-user: root
