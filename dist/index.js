@@ -4016,7 +4016,9 @@ class SSHConfig extends Array {
             let val;
             if (Array.isArray(value)) {
                 if (/ProxyCommand/i.test(name)) {
-                    val = value.map(({ val, separator }) => `${separator}${val}`).join('').trim();
+                    val = value.map(({ val, separator, quoted }) => {
+                        return `${separator}${quoted ? `"${val.replace(/"/g, '\\"')}"` : val}`;
+                    }).join('').trim();
                 }
                 else {
                     val = value.map(({ val }) => val);
