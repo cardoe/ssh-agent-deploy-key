@@ -98,36 +98,54 @@ describe('key parsing', () => {
 
 describe('GitHub deploy key parsing', () => {
   it.each`
-    keyComment                            | host            | repo_path          | org
-    ${'git@github.com:username/repo.git'} | ${'github.com'} | ${'username/repo'} | ${false}
-    ${'git@github.com:username/repo'}     | ${'github.com'} | ${'username/repo'} | ${false}
-    ${'github.com:username/repo.git'}     | ${'github.com'} | ${'username/repo'} | ${false}
-    ${'github.com:username/repo'}         | ${'github.com'} | ${'username/repo'} | ${false}
-    ${'git@github.com/username/repo.git'} | ${'github.com'} | ${'username/repo'} | ${false}
-    ${'git@github.com/username/repo'}     | ${'github.com'} | ${'username/repo'} | ${false}
-    ${'github.com/username/repo.git'}     | ${'github.com'} | ${'username/repo'} | ${false}
-    ${'github.com/username/repo'}         | ${'github.com'} | ${'username/repo'} | ${false}
-    ${'git@gh.private:username/repo.git'} | ${'gh.private'} | ${'username/repo'} | ${false}
-    ${'git@gh.private:username/repo'}     | ${'gh.private'} | ${'username/repo'} | ${false}
-    ${'gh.private:username/repo.git'}     | ${'gh.private'} | ${'username/repo'} | ${false}
-    ${'gh.private:username/repo'}         | ${'gh.private'} | ${'username/repo'} | ${false}
-    ${'git@gh.private/username/repo.git'} | ${'gh.private'} | ${'username/repo'} | ${false}
-    ${'git@gh.private/username/repo'}     | ${'gh.private'} | ${'username/repo'} | ${false}
-    ${'gh.private/username/repo.git'}     | ${'gh.private'} | ${'username/repo'} | ${false}
-    ${'gh.private/username/repo'}         | ${'gh.private'} | ${'username/repo'} | ${false}
-    ${'git@github.com:username'}          | ${'github.com'} | ${'username'}      | ${true}
-    ${'github.com:username'}              | ${'github.com'} | ${'username'}      | ${true}
-    ${'git@github.com/username'}          | ${'github.com'} | ${'username'}      | ${true}
-    ${'github.com/username'}              | ${'github.com'} | ${'username'}      | ${true}
-    ${'git@gh.private:username'}          | ${'gh.private'} | ${'username'}      | ${true}
-    ${'gh.private:username'}              | ${'gh.private'} | ${'username'}      | ${true}
-    ${'git@gh.private/username'}          | ${'gh.private'} | ${'username'}      | ${true}
-    ${'gh.private/username'}              | ${'gh.private'} | ${'username'}      | ${true}
+    keyComment                            | host            | repo_path          | org      | user
+    ${'git@github.com:username/repo.git'} | ${'github.com'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'git@github.com:username/repo'}     | ${'github.com'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'github.com:username/repo.git'}     | ${'github.com'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'github.com:username/repo'}         | ${'github.com'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'git@github.com/username/repo.git'} | ${'github.com'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'git@github.com/username/repo'}     | ${'github.com'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'github.com/username/repo.git'}     | ${'github.com'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'github.com/username/repo'}         | ${'github.com'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'git@gh.private:username/repo.git'} | ${'gh.private'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'git@gh.private:username/repo'}     | ${'gh.private'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'gh.private:username/repo.git'}     | ${'gh.private'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'gh.private:username/repo'}         | ${'gh.private'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'git@gh.private/username/repo.git'} | ${'gh.private'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'git@gh.private/username/repo'}     | ${'gh.private'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'gh.private/username/repo.git'}     | ${'gh.private'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'gh.private/username/repo'}         | ${'gh.private'} | ${'username/repo'} | ${false} | ${'git'}
+    ${'git@github.com:username'}          | ${'github.com'} | ${'username'}      | ${true}  | ${'git'}
+    ${'github.com:username'}              | ${'github.com'} | ${'username'}      | ${true}  | ${'git'}
+    ${'git@github.com/username'}          | ${'github.com'} | ${'username'}      | ${true}  | ${'git'}
+    ${'github.com/username'}              | ${'github.com'} | ${'username'}      | ${true}  | ${'git'}
+    ${'git@gh.private:username'}          | ${'gh.private'} | ${'username'}      | ${true}  | ${'git'}
+    ${'gh.private:username'}              | ${'gh.private'} | ${'username'}      | ${true}  | ${'git'}
+    ${'git@gh.private/username'}          | ${'gh.private'} | ${'username'}      | ${true}  | ${'git'}
+    ${'gh.private/username'}              | ${'gh.private'} | ${'username'}      | ${true}  | ${'git'}
+    ${'tig@github.com:username/repo.git'} | ${'github.com'} | ${'username/repo'} | ${false} | ${'tig'}
+    ${'tig@github.com:username/repo'}     | ${'github.com'} | ${'username/repo'} | ${false} | ${'tig'}
+    ${'tig@github.com/username/repo.git'} | ${'github.com'} | ${'username/repo'} | ${false} | ${'tig'}
+    ${'tig@github.com/username/repo'}     | ${'github.com'} | ${'username/repo'} | ${false} | ${'tig'}
+    ${'tig@gh.private:username/repo.git'} | ${'gh.private'} | ${'username/repo'} | ${false} | ${'tig'}
+    ${'tig@gh.private:username/repo'}     | ${'gh.private'} | ${'username/repo'} | ${false} | ${'tig'}
+    ${'tig@gh.private/username/repo.git'} | ${'gh.private'} | ${'username/repo'} | ${false} | ${'tig'}
+    ${'tig@gh.private/username/repo'}     | ${'gh.private'} | ${'username/repo'} | ${false} | ${'tig'}
+    ${'tig@github.com:username'}          | ${'github.com'} | ${'username'}      | ${true}  | ${'tig'}
+    ${'tig@github.com/username'}          | ${'github.com'} | ${'username'}      | ${true}  | ${'tig'}
+    ${'tig@gh.private:username'}          | ${'gh.private'} | ${'username'}      | ${true}  | ${'tig'}
+    ${'tig@gh.private/username'}          | ${'gh.private'} | ${'username'}      | ${true}  | ${'tig'}
   `(
-    "should '$keyComment' parse as '$host:$repo_path', org: $org",
-    async ({ keyComment, host, repo_path, org }) => {
+    "should '$keyComment' parse as '$host:$repo_path', org: $org, user: $user",
+    async ({ keyComment, host, repo_path, org, user }) => {
       const key = { algo: '', key: '', comment: keyComment as string };
-      expect(parseDeployKey(key)).toEqual({ ...key, host, repo_path, org });
+      expect(parseDeployKey(key)).toEqual({
+        ...key,
+        host,
+        repo_path,
+        org,
+        user,
+      });
     },
   );
 

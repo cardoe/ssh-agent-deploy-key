@@ -111,6 +111,7 @@ interface PubKey {
 }
 
 interface DeployKeyMatch extends PubKey {
+  user: string;
   host: string;
   repo_path: string;
   org: boolean;
@@ -122,11 +123,11 @@ interface DeployKey extends DeployKeyMatch {
 }
 
 function origRepoUri(key: DeployKey): string {
-  return `git@${key.host}:${key.repo_path}`;
+  return `${key.user}@${key.host}:${key.repo_path}`;
 }
 
 function mappedRepoUri(key: DeployKey): string {
-  return `git@${key.mapped_host}:${key.repo_path}`;
+  return `${key.user}@${key.mapped_host}:${key.repo_path}`;
 }
 
 export async function getPublicKeys(ssh: ISshCmd): Promise<PubKey[]> {
@@ -140,8 +141,16 @@ export async function getPublicKeys(ssh: ISshCmd): Promise<PubKey[]> {
 
 const OWNER_REPO_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+\/[_.a-z0-9-]+)?$/i;
 const OWNER_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+)$/i;
+const USER_MATCH = /^(\w+)@/i;
 
 export function parseDeployKey(key: PubKey): DeployKeyMatch | null {
+  const match = key.comment.match(USER_MATCH);
+  let user;
+  if (match) {
+    user = match[1];
+  } else {
+    user = 'git';
+  }
   {
     const data = key.comment.match(OWNER_REPO_MATCH);
     if (data) {
@@ -150,7 +159,7 @@ export function parseDeployKey(key: PubKey): DeployKeyMatch | null {
       );
       // trim off the .git
       const repo = data[2].replace(/.git$/, '');
-      return { ...key, host: data[1], repo_path: repo, org: false };
+      return { ...key, user, host: data[1], repo_path: repo, org: false };
     }
   }
   {
@@ -159,7 +168,7 @@ export function parseDeployKey(key: PubKey): DeployKeyMatch | null {
       core.info(
         `key comment '${key.comment}' matched GitHub deploy key org pattern`,
       );
-      return { ...key, host: repo[1], repo_path: repo[2], org: true };
+      return { ...key, user, host: repo[1], repo_path: repo[2], org: true };
     }
   }
 
