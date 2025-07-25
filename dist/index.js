@@ -418,6 +418,7 @@ function configDeployKeys(sshPath, pubKeys, gitCmd) {
                     [mappedRepoUri(key)]: [
                         `https://${key.host}/${key.repo_path}`,
                         origRepoUri(key),
+                        sshRepoUri(key),
                     ],
                 };
             }));
@@ -482,10 +483,13 @@ function cleanupDeployKeys(gitCmd) {
     });
 }
 function origRepoUri(key) {
-    return `git@${key.host}:${key.repo_path}`;
+    return `${key.user}@${key.host}:${key.repo_path}`;
+}
+function sshRepoUri(key) {
+    return `ssh://${key.user}@${key.host}/${key.repo_path}`;
 }
 function mappedRepoUri(key) {
-    return `git@${key.mapped_host}:${key.repo_path}`;
+    return `${key.user}@${key.mapped_host}:${key.repo_path}`;
 }
 function getPublicKeys(ssh) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -499,21 +503,30 @@ function getPublicKeys(ssh) {
 }
 const OWNER_REPO_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+\/[_.a-z0-9-]+)?$/i;
 const OWNER_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+)$/i;
+const USER_MATCH = /^(\w+)@/i;
 function parseDeployKey(key) {
+    const match = key.comment.match(USER_MATCH);
+    let user;
+    if (match) {
+        user = match[1];
+    }
+    else {
+        user = 'git';
+    }
     {
         const data = key.comment.match(OWNER_REPO_MATCH);
         if (data) {
             core.info(`key comment '${key.comment}' matched GitHub deploy key repo pattern`);
             // trim off the .git
             const repo = data[2].replace(/.git$/, '');
-            return Object.assign(Object.assign({}, key), { host: data[1], repo_path: repo, org: false });
+            return Object.assign(Object.assign({}, key), { user, host: data[1], repo_path: repo, org: false });
         }
     }
     {
         const repo = key.comment.match(OWNER_MATCH);
         if (repo) {
             core.info(`key comment '${key.comment}' matched GitHub deploy key org pattern`);
-            return Object.assign(Object.assign({}, key), { host: repo[1], repo_path: repo[2], org: true });
+            return Object.assign(Object.assign({}, key), { user, host: repo[1], repo_path: repo[2], org: true });
         }
     }
     core.info(`key comment '${key.comment}' did not match GitHub deploy key pattern`);
