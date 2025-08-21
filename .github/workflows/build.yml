@@ -22,7 +22,7 @@ jobs:
           node-version: 22.x
       - run: npm ci
       - run: npm run all
-      - uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5
+      - uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00 # v5
   # `dist/index.js` is a special file in Actions.
   # When you reference an action with `uses:` in a workflow,
   # `index.js` is the code that will run.
