@@ -398,7 +398,7 @@ const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
 const core = __importStar(__nccwpck_require__(7484));
 const io = __importStar(__nccwpck_require__(4994));
-const ssh_config_1 = __importDefault(__nccwpck_require__(1167));
+const ssh_config_1 = __importDefault(__nccwpck_require__(2180));
 function configDeployKeys(sshPath, pubKeys, gitCmd) {
     return __awaiter(this, void 0, void 0, function* () {
         const keys = getDeployKeys(pubKeys).map(computeKeyMapping);
@@ -3828,37 +3828,7 @@ function copyFile(srcFile, destFile, force) {
 
 /***/ }),
 
-/***/ 1167:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const ssh_config_1 = __importDefault(__nccwpck_require__(9983));
-__exportStar(__nccwpck_require__(9983), exports);
-exports["default"] = ssh_config_1.default;
-//# sourceMappingURL=index.js.map
-
-/***/ }),
-
-/***/ 7794:
+/***/ 6652:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -3905,7 +3875,37 @@ exports["default"] = glob;
 
 /***/ }),
 
-/***/ 9983:
+/***/ 2180:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const ssh_config_1 = __importDefault(__nccwpck_require__(5273));
+__exportStar(__nccwpck_require__(5273), exports);
+exports["default"] = ssh_config_1.default;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 5273:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -3914,10 +3914,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.LineType = void 0;
+exports.glob = exports.LineType = void 0;
 exports.parse = parse;
 exports.stringify = stringify;
-const glob_1 = __importDefault(__nccwpck_require__(7794));
+const glob_1 = __importDefault(__nccwpck_require__(6652));
+exports.glob = glob_1.default;
 const child_process_1 = __nccwpck_require__(5317);
 const os_1 = __importDefault(__nccwpck_require__(857));
 const RE_SPACE = /\s/;
@@ -3930,6 +3931,7 @@ var LineType;
 (function (LineType) {
     LineType[LineType["DIRECTIVE"] = 1] = "DIRECTIVE";
     LineType[LineType["COMMENT"] = 2] = "COMMENT";
+    LineType[LineType["EMPTY"] = 3] = "EMPTY";
 })(LineType || (exports.LineType = LineType = {}));
 const REPEATABLE_DIRECTIVES = [
     'IdentityFile',
@@ -4430,7 +4432,12 @@ function parse(text) {
         else if (node.type === LineType.DIRECTIVE && !node.param) {
             // blank lines at file end
             if (config.length === 0) {
-                configWas[configWas.length - 1].after += node.before;
+                if (configWas.length === 0) {
+                    configWas.push({ type: LineType.EMPTY, before: '', after: node.before });
+                }
+                else {
+                    configWas[configWas.length - 1].after += node.before;
+                }
             }
             else {
                 config[config.length - 1].after += node.before;
