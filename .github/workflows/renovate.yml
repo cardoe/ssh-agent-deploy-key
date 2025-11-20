@@ -15,7 +15,7 @@ jobs:
           app-id: ${{ vars.APP_ID }}
           owner: ${{ github.repository_owner }}
           repositories: 'ssh-agent-deploy-key'
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Self-hosted Renovate
         uses: renovatebot/github-action@ea850436a5fe75c0925d583c7a02c60a5865461d # v43.0.20
         with:
