@@ -398,7 +398,7 @@ const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
 const core = __importStar(__nccwpck_require__(7484));
 const io = __importStar(__nccwpck_require__(4994));
-const ssh_config_1 = __importDefault(__nccwpck_require__(2180));
+const ssh_config_1 = __importDefault(__nccwpck_require__(5273));
 function configDeployKeys(sshPath, pubKeys, gitCmd) {
     return __awaiter(this, void 0, void 0, function* () {
         const keys = getDeployKeys(pubKeys).map(computeKeyMapping);
@@ -3851,8 +3851,8 @@ function match(pattern, text) {
  * A helper function to match input against [pattern-list](https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5#PATTERNS).
  * According to `man ssh_config`, negated patterns shall be matched first.
  *
- * @param {string|string[]} patternList
- * @param {string} str
+ * @param {string|string[]} patternList one or more glob patterns to match
+ * @param {string} text the text to match
  */
 function glob(patternList, text) {
     const patterns = Array.isArray(patternList) ? patternList : patternList.split(/,/);
@@ -3875,36 +3875,6 @@ exports["default"] = glob;
 
 /***/ }),
 
-/***/ 2180:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const ssh_config_1 = __importDefault(__nccwpck_require__(5273));
-__exportStar(__nccwpck_require__(5273), exports);
-exports["default"] = ssh_config_1.default;
-//# sourceMappingURL=index.js.map
-
-/***/ }),
-
 /***/ 5273:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -3914,23 +3884,30 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.glob = exports.LineType = void 0;
+exports.SSHConfig = exports.glob = exports.LineType = void 0;
 exports.parse = parse;
 exports.stringify = stringify;
-const glob_1 = __importDefault(__nccwpck_require__(6652));
-exports.glob = glob_1.default;
-const child_process_1 = __nccwpck_require__(5317);
-const os_1 = __importDefault(__nccwpck_require__(857));
+const glob_ts_1 = __importDefault(__nccwpck_require__(6652));
+exports.glob = glob_ts_1.default;
+const node_child_process_1 = __nccwpck_require__(1421);
+const node_os_1 = __importDefault(__nccwpck_require__(8161));
 const RE_SPACE = /\s/;
 const RE_LINE_BREAK = /\r|\n/;
 const RE_SECTION_DIRECTIVE = /^(Host|Match)$/i;
 const RE_MULTI_VALUE_DIRECTIVE = /^(GlobalKnownHostsFile|Host|IPQoS|SendEnv|UserKnownHostsFile|ProxyCommand|Match|CanonicalDomains)$/i;
 const RE_QUOTE_DIRECTIVE = /^(?:CertificateFile|IdentityFile|IdentityAgent|User)$/i;
 const RE_SINGLE_LINE_DIRECTIVE = /^(Include|IdentityFile)$/i;
+/**
+ * A type of line in an ssh-config file. Differentiates between directives,
+ * comments, and empty lines.
+ */
 var LineType;
 (function (LineType) {
+    /** line with a directive in an ssh-config file */
     LineType[LineType["DIRECTIVE"] = 1] = "DIRECTIVE";
+    /** line with a comment in an ssh-config file */
     LineType[LineType["COMMENT"] = 2] = "COMMENT";
+    /** empty line in an ssh-config file */
     LineType[LineType["EMPTY"] = 3] = "EMPTY";
 })(LineType || (exports.LineType = LineType = {}));
 const REPEATABLE_DIRECTIVES = [
@@ -3941,6 +3918,7 @@ const REPEATABLE_DIRECTIVES = [
     'CertificateFile',
 ];
 function compare(line, opts) {
+    // @ts-ignore
     return opts.hasOwnProperty(line.param) && opts[line.param] === line.value;
 }
 function getIndent(config) {
@@ -3971,15 +3949,15 @@ function match(criteria, context) {
           ${criterion}
         }
         main`;
-                return (0, child_process_1.spawnSync)(command, { shell: true }).status === 0;
+                return (0, node_child_process_1.spawnSync)(command, { shell: true }).status === 0;
             case 'host':
-                return (0, glob_1.default)(criterion, context.params.HostName);
+                return (0, glob_ts_1.default)(criterion, context.params.HostName);
             case 'originalhost':
-                return (0, glob_1.default)(criterion, context.params.OriginalHost);
+                return (0, glob_ts_1.default)(criterion, context.params.OriginalHost);
             case 'user':
-                return (0, glob_1.default)(criterion, context.params.User);
+                return (0, glob_ts_1.default)(criterion, context.params.User);
             case 'localuser':
-                return (0, glob_1.default)(criterion, context.params.LocalUser);
+                return (0, glob_ts_1.default)(criterion, context.params.LocalUser);
         }
     };
     for (const key in criteria) {
@@ -3991,7 +3969,18 @@ function match(criteria, context) {
     }
     return true;
 }
+/**
+ * Represents parsed SSH config. Main element of this library.
+ *
+ * A parsed SSH config is modelled as an array of {@link Line}s.
+ */
 class SSHConfig extends Array {
+    /** shortcut to access {@link LineType.DIRECTIVE} */
+    static DIRECTIVE = LineType.DIRECTIVE;
+    /** shortcut to access {@link LineType.COMMENT} */
+    static COMMENT = LineType.COMMENT;
+    /** shortcut to access {@link LineType.EMPTY} */
+    static EMPTY = LineType.EMPTY;
     /**
      * Parse SSH config text into structured object.
      */
@@ -4004,14 +3993,14 @@ class SSHConfig extends Array {
     static stringify(config) {
         return stringify(config);
     }
-    compute(opts) {
+    compute(opts, computeOpts) {
         if (typeof opts === 'string')
             opts = { Host: opts };
         let userInfo;
         try {
-            userInfo = os_1.default.userInfo();
+            userInfo = node_os_1.default.userInfo();
         }
-        catch (_a) {
+        catch {
             // os.userInfo() throws a SystemError if a user has no username or homedir.
             userInfo = { username: process.env.USER || process.env.USERNAME || '' };
         }
@@ -4028,9 +4017,10 @@ class SSHConfig extends Array {
         };
         const obj = {};
         const setProperty = (name, value) => {
+            const key = computeOpts?.ignoreCase ? name.toLowerCase() : name;
             let val;
             if (Array.isArray(value)) {
-                if (/ProxyCommand/i.test(name)) {
+                if (/ProxyCommand/i.test(key)) {
                     val = value.map(({ val, separator, quoted }) => {
                         return `${separator}${quoted ? `"${val.replace(/"/g, '\\"')}"` : val}`;
                     }).join('').trim();
@@ -4043,18 +4033,20 @@ class SSHConfig extends Array {
                 val = value;
             }
             const val0 = Array.isArray(val) ? val[0] : val;
-            if (REPEATABLE_DIRECTIVES.includes(name)) {
-                const list = (obj[name] || (obj[name] = []));
+            // Use case-insensitive check for repeatable directives
+            const isRepeatable = REPEATABLE_DIRECTIVES.some(d => d.toLowerCase() === name.toLowerCase());
+            if (isRepeatable) {
+                const list = (obj[key] || (obj[key] = []));
                 list.push(...[].concat(val));
             }
-            else if (obj[name] == null) {
+            else if (obj[key] == null) {
                 if (name === 'HostName') {
                     context.params.HostName = val0;
                 }
                 else if (name === 'User') {
                     context.params.User = val0;
                 }
-                obj[name] = val;
+                obj[key] = val;
             }
         };
         if (opts.User !== undefined) {
@@ -4064,7 +4056,8 @@ class SSHConfig extends Array {
             for (const line of this) {
                 if (line.type !== LineType.DIRECTIVE)
                     continue;
-                if (line.param === 'Host' && (0, glob_1.default)(Array.isArray(line.value) ? line.value.map(({ val }) => val) : line.value, context.params.Host)) {
+                // Host and Match directives are always case-insensitive (per OpenSSH behavior)
+                if (/^host$/i.test(line.param) && (0, glob_ts_1.default)(Array.isArray(line.value) ? line.value.map(({ val }) => val) : line.value, context.params.Host)) {
                     let canonicalizeHostName = false;
                     let canonicalDomains = [];
                     setProperty(line.param, line.value);
@@ -4082,7 +4075,7 @@ class SSHConfig extends Array {
                     if (canonicalDomains.length > 0 && canonicalizeHostName && context.params.Host === context.params.OriginalHost) {
                         for (const domain of canonicalDomains) {
                             const host = `${context.params.OriginalHost}.${domain}`;
-                            const { status, stderr } = (0, child_process_1.spawnSync)('nslookup', [host]);
+                            const { status, stderr } = (0, node_child_process_1.spawnSync)('nslookup', [host]);
                             if (status === 0 && !/can't find/.test(stderr.toString())) {
                                 context.params.Host = host;
                                 setProperty('Host', host);
@@ -4092,14 +4085,14 @@ class SSHConfig extends Array {
                         }
                     }
                 }
-                else if (line.param === 'Match' && 'criteria' in line && match(line.criteria, context)) {
+                else if (/^match$/i.test(line.param) && 'criteria' in line && match(line.criteria, context)) {
                     for (const subline of line.config) {
                         if (subline.type === LineType.DIRECTIVE) {
                             setProperty(subline.param, subline.value);
                         }
                     }
                 }
-                else if (line.param !== 'Host' && line.param !== 'Match') {
+                else if (!/^(host|match)$/i.test(line.param)) {
                     setProperty(line.param, line.value);
                 }
             }
@@ -4118,7 +4111,7 @@ class SSHConfig extends Array {
         if (!(opts && ('Host' in opts || 'Match' in opts))) {
             throw new Error('Can only find by Host or Match');
         }
-        return super.find(line => compare(line, opts));
+        return super.find((line) => 'param' in line && compare(line, opts));
     }
     remove(opts) {
         let index;
@@ -4129,11 +4122,14 @@ class SSHConfig extends Array {
             throw new Error('Can only remove by Host or Match');
         }
         else {
-            index = super.findIndex(line => compare(line, opts));
+            index = super.findIndex((line) => 'param' in line && compare(line, opts));
         }
         if (index >= 0)
             return this.splice(index, 1);
     }
+    /**
+     * Convert this SSH config to its textual presentation via {@link stringify}.
+     */
     toString() {
         return stringify(this);
     }
@@ -4233,19 +4229,20 @@ class SSHConfig extends Array {
         return config;
     }
 }
-SSHConfig.DIRECTIVE = LineType.DIRECTIVE;
-SSHConfig.COMMENT = LineType.COMMENT;
 exports["default"] = SSHConfig;
+exports.SSHConfig = SSHConfig;
 /**
  * Parse SSH config text into structured object.
  */
 function parse(text) {
+    // Handle Buffer input by converting to string
+    const input = typeof text === 'string' ? text : text.toString('utf-8');
     let i = 0;
     let chr = next();
     let config = new SSHConfig();
     let configWas = config;
     function next() {
-        return text[i++];
+        return input[i++];
     }
     function space() {
         let spaces = '';
@@ -4466,7 +4463,7 @@ function stringify(config) {
     }
     function formatDirective(line) {
         const quoted = line.quoted
-            || (RE_QUOTE_DIRECTIVE.test(line.param) && RE_SPACE.test(line.value));
+            || (RE_QUOTE_DIRECTIVE.test(line.param) && typeof line.value === 'string' && RE_SPACE.test(line.value));
         const value = formatValue(line.value, quoted);
         return `${line.param}${line.separator}${value}`;
     }
@@ -27041,11 +27038,27 @@ module.exports = require("net");
 
 /***/ }),
 
+/***/ 1421:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:child_process");
+
+/***/ }),
+
 /***/ 8474:
 /***/ ((module) => {
 
 "use strict";
 module.exports = require("node:events");
+
+/***/ }),
+
+/***/ 8161:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:os");
 
 /***/ }),
 
