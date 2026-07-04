@@ -3945,6 +3945,9 @@ function match(criteria, context) {
                 context.doFinalPass = true;
                 return false;
             case 'exec':
+                if (!context.options.matchExec) {
+                    return false;
+                }
                 const command = `function main {
           ${criterion}
         }
@@ -4011,6 +4014,10 @@ class SSHConfig extends Array {
                 OriginalHost: opts.Host,
                 User: userInfo.username,
                 LocalUser: userInfo.username,
+            },
+            options: {
+                ignoreCase: computeOpts?.ignoreCase === true,
+                matchExec: computeOpts?.matchExec !== false,
             },
             inFinalPass: false,
             doFinalPass: false,
