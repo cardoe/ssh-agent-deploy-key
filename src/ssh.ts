@@ -144,8 +144,8 @@ export async function getPublicKeys(ssh: ISshCmd): Promise<PubKey[]> {
   });
 }
 
-const OWNER_REPO_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+\/[_.a-z0-9-]+)?$/i;
-const OWNER_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+)$/i;
+const OWNER_REPO_MATCH = /\b([\w.-]+)[:/]([_.a-z0-9-]+\/[_.a-z0-9-]+)?$/i;
+const OWNER_MATCH = /\b([\w.-]+)[:/]([_.a-z0-9-]+)$/i;
 const USER_MATCH = /^(\w+)@/i;
 
 export function parseDeployKey(key: PubKey): DeployKeyMatch | null {
