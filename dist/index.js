@@ -501,8 +501,8 @@ function getPublicKeys(ssh) {
         });
     });
 }
-const OWNER_REPO_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+\/[_.a-z0-9-]+)?$/i;
-const OWNER_MATCH = /\b([\w.]+)[:/]([_.a-z0-9-]+)$/i;
+const OWNER_REPO_MATCH = /\b([\w.-]+)[:/]([_.a-z0-9-]+\/[_.a-z0-9-]+)?$/i;
+const OWNER_MATCH = /\b([\w.-]+)[:/]([_.a-z0-9-]+)$/i;
 const USER_MATCH = /^(\w+)@/i;
 function parseDeployKey(key) {
     const match = key.comment.match(USER_MATCH);
