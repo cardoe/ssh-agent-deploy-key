@@ -28465,8 +28465,10 @@ class SSHConfig extends Array {
         let config = lastEntry && lastEntry.config || this;
         let configWas = this;
         let lastLine = config.length > 0 ? config[config.length - 1] : lastEntry;
-        if (lastLine && !lastLine.after)
-            lastLine.after = '\n';
+        // terminate the last line before appending; `after` may hold a trailing
+        // `#` comment without a line break when the input ends at EOF
+        if (lastLine && !RE_LINE_BREAK.test(lastLine.after))
+            lastLine.after += '\n';
         let sectionLineFound = config !== configWas;
         for (const param in opts) {
             const value = opts[param];
@@ -28482,9 +28484,10 @@ class SSHConfig extends Array {
                 sectionLineFound = true;
                 line.before = indent.replace(/  |\t/, '');
                 config = configWas;
-                // separate sections with an extra newline
+                // separate sections with an extra newline; the previous line may end
+                // with a trailing `#` comment before its line break
                 // https://github.com/cyjake/ssh-config/issues/23#issuecomment-564768248
-                if (lastLine && lastLine.after === '\n')
+                if (lastLine && (lastLine.after === '\n' || /[^\r\n]\r?\n$/.test(lastLine.after)))
                     lastLine.after += '\n';
                 config.push(line);
                 config = line.config = new SSHConfig();
@@ -28599,10 +28602,14 @@ function parse(text) {
         }
         return (sep + space());
     }
+    // whitespace right before a trailing `#` comment, kept so that stringify
+    // can reproduce the comment where it was
+    let trailingSpace = '';
     function value() {
         let val = '';
         let quoted = false;
         let escaped = false;
+        trailingSpace = '';
         while (chr && !RE_LINE_BREAK.test(chr)) {
             // backslash escapes only double quotes
             if (escaped) {
@@ -28627,6 +28634,7 @@ function parse(text) {
         if (quoted || escaped) {
             throw new Error(`Unexpected line break at ${val}`);
         }
+        trailingSpace = val.slice(val.trimEnd().length);
         return val.trim();
     }
     function comment() {
@@ -28651,20 +28659,27 @@ function parse(text) {
         // whether current context is within quotations or not
         let quoted = false;
         let escaped = false;
+        // spaces after the last complete value
+        let spacesAfterValue = '';
+        trailingSpace = '';
         while (chr && !RE_LINE_BREAK.test(chr)) {
             if (escaped) {
                 val += chr === '"' ? chr : `\\${chr}`;
                 escaped = false;
+                spacesAfterValue = '';
             }
             else if (chr === '"') {
                 quoted = !quoted;
+                spacesAfterValue = '';
             }
             else if (chr === '\\') {
                 escaped = true;
+                spacesAfterValue = '';
             }
             else if (quoted) {
                 val += chr;
                 valQuoted = true;
+                spacesAfterValue = '';
             }
             else if (/[ \t=]/.test(chr)) {
                 if (val) {
@@ -28673,13 +28688,17 @@ function parse(text) {
                     valQuoted = false;
                     valSeparator = chr;
                 }
-                // otherwise ignore the space
+                // spaces after the last complete value, kept for a potential trailing
+                // `#` comment; reset as soon as another value starts
+                spacesAfterValue += chr;
             }
             else if (chr === '#' && results.length > 0) {
+                trailingSpace = spacesAfterValue;
                 break;
             }
             else {
                 val += chr;
+                spacesAfterValue = '';
             }
             chr = next();
         }
@@ -28706,6 +28725,11 @@ function parse(text) {
         };
         if (!result.quoted)
             delete result.quoted;
+        // a `#` comment trailing the value on the same line, kept in `after` so
+        // that stringify can reproduce it verbatim
+        if (chr === '#') {
+            result.after = trailingSpace + comment().content;
+        }
         if (/^Match$/i.test(param)) {
             const criteria = {};
             if (typeof result.value === 'string') {
@@ -28739,7 +28763,7 @@ function parse(text) {
         const node = chr === '#' ? comment() : directive();
         const after = linebreak();
         node.before = before;
-        node.after = after;
+        node.after += after;
         return node;
     }
     while (chr) {
@@ -28782,7 +28806,9 @@ function stringify(config) {
             }
             return result;
         }
-        return quoted ? `"${value}"` : value;
+        // escape `"` so that the value round-trips through parse, mirroring how
+        // parse unescapes `\"` inside quoted values
+        return quoted ? `"${value.replace(/"/g, '\\"')}"` : value;
     }
     function formatDirective(line) {
         const quoted = line.quoted
